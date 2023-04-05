@@ -1,0 +1,5 @@
+dependencies:
+  discord:
+    path: ../toit-discord
+  openai:
+    path: ../toit-openai
