@@ -1,5 +1,8 @@
 dependencies:
   discord:
     path: ../toit-discord
+  host:
+    url: github.com/toitlang/pkg-host
+    version: ^1.9.0
   openai:
     path: ../toit-openai

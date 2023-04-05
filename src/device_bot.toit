@@ -6,9 +6,21 @@ import openai
 import .interpreter
 export Function
 
+SYSTEM_MESSAGE ::=
+    "You are terse bot that writes simple programs in a simplified C-like programming language."
+
+// We hardcode the builtins here, so that the string can be stored in flash.
+// Use $builtins_description to generate the text when the builtins change.
 LANGUAGE_DESCRIPTION ::= """
   Given a simplified C-like programming language with the following builtin functions:
-  $builtins_description
+  - print(<message>): Prints a message.
+  - sleep(<ms>): Sleeps for a given amount of milliseconds.
+  - random(<min>, <max>): Returns a random integer between min and max.
+  - list_create(): Creates a new list.
+  - list_add(<list>, <value>): Adds a value to a list.
+  - list_get(<list>, <index>): Gets a value from a list.
+  - list_set(<list>, <index>, <value>): Sets a value in a list.
+  - list_size(<list>): Returns the size of a list.
 
   Examples:
   ```
@@ -72,9 +84,6 @@ class DeviceBot:
       function_description_message_ += "Under no circumstances use any function that is not on the builtin list!"
 
     openai_client_ = openai.Client --key=openai_key
-    // Establish a connection in the beginning when the memory isn't fragmented.
-    // We are likely losing the connection again, but maybe it helps sometimes.
-    openai_client_.models.list
 
   close:
     if openai_client_:
@@ -84,17 +93,18 @@ class DeviceBot:
       executing_task_.cancel
       executing_task_ = null
 
-  handle_message message/string --when_started/Lambda:
+  handle_message message/string? --when_started/Lambda:
     if executing_task_:
       executing_task_.cancel
       executing_task_ = null
+    request_message := "$REQUEST_MESSAGE$message"
+    message = null  // Allow to GC.
     executing_task_ = task::
       conversation/List? := [
-        openai.ChatMessage.system
-            "You are terse bot that writes simple programs in a simplified C-like programming language.",
+        openai.ChatMessage.system SYSTEM_MESSAGE,
         openai.ChatMessage.user LANGUAGE_DESCRIPTION,
         openai.ChatMessage.user function_description_message_,
-        openai.ChatMessage.user "$REQUEST_MESSAGE$message",
+        openai.ChatMessage.user request_message,
       ]
 
       // Give OpenAI 3 attempts at correcting the program.
@@ -121,8 +131,9 @@ class DeviceBot:
           conversation.add
               openai.ChatMessage.assistant response
           conversation.add
+              openai.ChatMessage.user "I got the following error: $exception."
+          conversation.add
               openai.ChatMessage.user """
-                I got the following error: $exception.
                 Remember: no self-defined functions! No objects! This is an extremely simple language.
                 Fix the program.
                 Only respond with the program!

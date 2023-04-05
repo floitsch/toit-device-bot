@@ -299,7 +299,11 @@ class Scanner:
 
     if c == ';':
       position++
-      return Token Token.TYPE_SEQUENCE_SEPARATOR ";"
+      return Token Token.TYPE_SEMICOLON ";"
+
+    if c == ',':
+      position++
+      return Token Token.TYPE_COMMA ","
 
     throw "unexpected character: $(string.from_rune c)"
 
@@ -335,7 +339,8 @@ class Token:
   static TYPE_TRUE ::= 13
   static TYPE_FALSE ::= 14
   static TYPE_STRING ::= 15
-  static TYPE_SEQUENCE_SEPARATOR ::= 16
+  static TYPE_SEMICOLON ::= 16
+  static TYPE_COMMA ::= 17
 
   type/int
   value/string
@@ -378,8 +383,6 @@ class Parser:
     is_first := true
     while current.type != Token.TYPE_EOF:
       body.add parse_statement
-      while current.type == Token.TYPE_SEQUENCE_SEPARATOR:
-        consume
     consume Token.TYPE_EOF
     return Program body
 
@@ -392,9 +395,11 @@ class Parser:
       return parse_if
     if current.type == Token.TYPE_WHILE:
       return parse_while
-    if current.type == Token.TYPE_SEQUENCE_SEPARATOR:
+    if current.type == Token.TYPE_SEMICOLON:
       return Nop
-    return ExpressionStatement parse_expression
+    expression := parse_expression
+    consume Token.TYPE_SEMICOLON
+    return ExpressionStatement expression
 
   parse_block -> Block:
     consume Token.TYPE_LEFT_BRACE
@@ -402,8 +407,8 @@ class Parser:
     while current.type != Token.TYPE_RIGHT_BRACE and current.type != Token.TYPE_EOF:
       node := parse_statement
       nodes.add node
-      if current.type == Token.TYPE_SEQUENCE_SEPARATOR:
-        consume Token.TYPE_SEQUENCE_SEPARATOR
+      if current.type == Token.TYPE_SEMICOLON:
+        consume Token.TYPE_SEMICOLON
     consume Token.TYPE_RIGHT_BRACE
     return Block nodes
 
@@ -415,6 +420,7 @@ class Parser:
     consume Token.TYPE_IDENTIFIER
     consume Token.TYPE_OPERATOR "="
     expression := parse_expression
+    consume Token.TYPE_SEMICOLON
     return Let name expression
 
   parse_if -> If:
@@ -578,9 +584,7 @@ class Parser:
         args := []
         while current.type != Token.TYPE_RIGHT_PAREN:
           args.add parse_expression
-          if current.type == Token.TYPE_OPERATOR and
-              current.value == ",":
-            consume Token.TYPE_OPERATOR ","
+          if current.type == Token.TYPE_COMMA: consume
         consume Token.TYPE_RIGHT_PAREN
         function/Function? := functions.get name
         if not function:
@@ -725,11 +729,17 @@ class Binary extends Expression:
   constructor .op .left .right:
 
   eval scope/List -> any:
+    // Short-circuiting.
     left_value := left.eval scope
+    if op == "&&" and not left_value:
+      return false
+    if op == "||" and left_value:
+      return true
+
     right_value := right.eval scope
     if op == "+":
-      if left_value is String or right_value is String:
-        return left_value.stringify + right_value.stringify
+      if left_value is string or right_value is string:
+        return "$left_value$right_value"
       return left_value + right_value
     if op == "-":
       return left_value - right_value
