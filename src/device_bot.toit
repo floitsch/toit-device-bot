@@ -10,44 +10,39 @@ SYSTEM_MESSAGE ::=
     "You are terse bot that writes simple programs in a simplified C-like programming language."
 
 // We hardcode the builtins here, so that the string can be stored in flash.
-// Use $builtins_description to generate the text when the builtins change.
+// We also shorten the description, a bit.
 LANGUAGE_DESCRIPTION ::= """
   Given a simplified C-like programming language with the following builtin functions:
-  - print(<message>): Prints a message.
-  - sleep(<ms>): Sleeps for a given amount of milliseconds.
-  - random(<min>, <max>): Returns a random integer between min and max.
-  - list_create(): Creates a new list.
-  - list_add(<list>, <value>): Adds a value to a list.
-  - list_get(<list>, <index>): Gets a value from a list.
-  - list_set(<list>, <index>, <value>): Sets a value in a list.
-  - list_size(<list>): Returns the size of a list.
+  - print(<message>).
+  - sleep(<ms>).
+  - random(<min>, <max>).
+  - now(): Returns the ms since the epoch.
+  - List functions: 'list_create()', 'list_add(<list>, <value>)', 'list_get', 'list_set', 'list_size'.
+  - Map function: 'map_create()', 'map_set(<map>, <key>, <value>)', 'map_get', 'map_contains', 'map_keys', 'map_values', 'map_size'.
+    'map_get' throws an error if the key is not in the map.
+    Keys can be integers or strings.
 
-  Examples:
+  Example:
   ```
-  // Print a message, then sleep for 1000ms, then print another message.
-  print("Hello world!");
-  sleep(1000);
-  print("Goodbye world!");
-  ```
-
-  ```
-  // Print a message 10 times.
+  // Create a map from numbers to their squares.
+  let map = map_create();
   let i = 0;
+  let sum = 0;
   while (i < 10) {
-    print("Hello world!");
+    map_set(map, i, i * i);
+    sum = sum + i * i;
     i = i + 1;
   }
-  ```
+  // Print the map.
+  print(map);
+  // Print the square of 5.
+  print(map_get(map, 5));
 
-  ```
-  // Add 10 numbers to a list and print it.
-  let list = list_create();
-  let i = 0;
-  while (i < 10) {
-    list_add(list, i);
-    i = i + 1;
-  }
-  print(list);
+  let keys = map_keys(map);
+  // Print the element in the middle of the key list.
+  print(list_get(keys, list_size(keys) / 2));
+  // Print the average of the squares.
+  print(sum * 1.0 / list_size(keys));
   ```
 
   This language is *not* Javascript. It has no objects (not even 'Math') or self-defined functions. No 'const'."""

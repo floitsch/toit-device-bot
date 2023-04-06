@@ -15,13 +15,14 @@ main:
   test_statements
   test_builtins
   test_openai_programs
+  test_instruction_example
 
 run_expression program/Program --allow_multiple_statements/bool=false:
   if not allow_multiple_statements:
     expect_equals 1 program.body.size
   scope := [{:}]
   for i := 0 ; i < program.body.size - 1; i++:
-    program.body[i].eval scope
+    (program.body[i] as Statement).eval scope (: throw "break") (: throw "continue")
   statement := program.body.last
   expect statement is ExpressionStatement
   return (statement as ExpressionStatement).expression.eval scope
@@ -441,6 +442,97 @@ test_statements:
     "print 3",
   ] log
 
+  // Continue.
+  log = run_with_log """
+    let i = 0;
+    while (i < 3) {
+      if (i == 1) {
+        i = i + 1;
+        continue;
+      }
+      print(i);
+      i = i + 1;
+    }
+  """
+  expect_equals [
+    "print 0",
+    "print 2",
+  ] log
+
+  // Nested continue.
+  log = run_with_log """
+    let i = 0;
+    while (i < 3) {
+      if (i == 1) {
+        i = i + 1;
+        continue;
+      }
+      print("i" + i);
+      let j = 0;
+      while (j < 3) {
+        if (j == 1) {
+          j = j + 1;
+          continue;
+        }
+        print("j" + j);
+        j = j + 1;
+      }
+      i = i + 1;
+    }
+  """
+  expect_equals [
+    "print i0",
+    "print j0",
+    "print j2",
+    "print i2",
+    "print j0",
+    "print j2",
+  ] log
+
+  // Break.
+  log = run_with_log """
+    let i = 0;
+    while (i < 3) {
+      if (i == 1) {
+        break;
+      }
+      print(i);
+      i = i + 1;
+    }
+    print(i);
+  """
+  expect_equals [
+    "print 0",
+    "print 1",
+  ] log
+
+  // Nested break.
+  log = run_with_log """
+    let i = 0;
+    while (i < 3) {
+      if (i == 2) {
+        break;
+      }
+      print("i" + i);
+      i = i + 1;
+      let j = 0;
+      while (j < 3) {
+        if (j == i) {
+          break;
+        }
+        print("j" + j);
+        j = j + 1;
+      }
+    }
+  """
+  expect_equals [
+    "print i0",
+    "print j0",
+    "print i1",
+    "print j0",
+    "print j1",
+  ] log
+
   // If statements.
   log = run_with_log """
     if (true) {
@@ -493,6 +585,26 @@ test_statements:
     else print("This should print");
   """
   expect_equals ["print This should print"] log
+
+  // Test nops.
+  log = run_with_log ";"
+  expect_equals [] log
+
+  log = run_with_log """
+    if (true);
+  """
+  expect_equals [] log
+
+  log = run_with_log """
+    if (false); else print("This should print");
+  """
+  expect_equals ["print This should print"] log
+
+  log = run_with_log """
+    if (true) {
+    }
+  """
+  expect_equals [] log
 
 test_builtins:
   // No real way to test 'print'.
@@ -620,3 +732,36 @@ test_openai_programs:
   expect_equals
       expected
       run_with_log PROGRAM3
+
+test_instruction_example:
+  // Make sure the example we send to OpenAI is actually correct...
+  EXAMPLE ::= """
+    // Create a map from numbers to their squares.
+    let map = map_create();
+    let i = 0;
+    let sum = 0;
+    while (i < 10) {
+      map_set(map, i, i * i);
+      sum = sum + i * i;
+      i = i + 1;
+    }
+    // Print the map.
+    print(map);
+    // Print the square of 5.
+    print(map_get(map, 5));
+
+    let keys = map_keys(map);
+    // Print the element in the middle of the key list.
+    print(list_get(keys, list_size(keys) / 2));
+    // Print the average of the squares.
+    print(sum * 1.0 / list_size(keys));
+  """
+  expected := [
+    "print {0: 0, 1: 1, 2: 4, 3: 9, 4: 16, 5: 25, 6: 36, 7: 49, 8: 64, 9: 81}",
+    "print 25",
+    "print 5",
+    "print 28.5",
+  ]
+  expect_equals
+      expected
+      run_with_log EXAMPLE

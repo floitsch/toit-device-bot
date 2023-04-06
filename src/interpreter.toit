@@ -66,6 +66,11 @@ BUILTINS ::= [
           max := args[1]
           random min max,
   Function
+      --syntax="now()"
+      --description="Returns the current time in milliseconds since epoch."
+      --action=:: | args |
+          Time.now.ms_since_epoch,
+  Function
       --syntax="list_create()"
       --description="Creates a new list."
       --action=:: | args |
@@ -98,6 +103,53 @@ BUILTINS ::= [
       --action=:: | args |
           list/List := args[0]
           list.size,
+  Function
+      --syntax="map_create()"
+      --description="Creates a new map."
+      --action=:: | args |
+          {:},
+  Function
+      --syntax="map_set(<map>, <key>, <value>)"
+      --description="Sets a value in a map."
+      --action=:: | args |
+          map/Map := args[0]
+          key := args[1]
+          value := args[2]
+          map[key] = value,
+  Function
+      --syntax="map_get(<map>, <key>)"
+      --description="Gets a value from a map."
+      --action=:: | args |
+          map/Map := args[0]
+          key := args[1]
+          if not map.contains key:
+            throw "Key not found in map: $key"
+          map[key],
+  Function
+      --syntax="map_contains(<map>, <key>)"
+      --description="Returns true if the map contains the given key."
+      --action=:: | args |
+          map/Map := args[0]
+          key := args[1]
+          map.contains key,
+  Function
+      --syntax="map_keys(<map>)"
+      --description="Returns a list of all keys in the map."
+      --action=:: | args |
+          map/Map := args[0]
+          map.keys,
+  Function
+      --syntax="map_values(<map>)"
+      --description="Returns a list of all values in the map."
+      --action=:: | args |
+          map/Map := args[0]
+          map.values,
+  Function
+      --syntax="map_size(<map>)"
+      --description="Returns the size of a map."
+      --action=:: | args |
+          map/Map := args[0]
+          map.size,
 ]
 
 builtins_description -> string:
@@ -119,7 +171,7 @@ class Scanner:
 
   next -> Token:
     if position >= code.size:
-      return Token Token.TYPE_EOF ""
+      return Token Token.EOF ""
 
     keep_removing_spaces_and_comments := true
     while keep_removing_spaces_and_comments:
@@ -141,7 +193,7 @@ class Scanner:
 
 
     if position >= code.size:
-      return Token Token.TYPE_EOF ""
+      return Token Token.EOF ""
 
     c := code[position]
 
@@ -153,80 +205,80 @@ class Scanner:
         c == '^' or
         c == '~':
       position++
-      return Token Token.TYPE_OPERATOR (string.from_rune c)
+      return Token Token.OPERATOR (string.from_rune c)
 
     if c == '<':
       if peek == '<':
         position += 2
-        return Token Token.TYPE_OPERATOR "<<"
+        return Token Token.OPERATOR "<<"
       if peek == '=':
         position += 2
-        return Token Token.TYPE_OPERATOR "<="
+        return Token Token.OPERATOR "<="
       position++
-      return Token Token.TYPE_OPERATOR "<"
+      return Token Token.OPERATOR "<"
 
     if c == '>':
       if peek == '>':
         if (peek 2) == '>':
           position += 3
-          return Token Token.TYPE_OPERATOR ">>>"
+          return Token Token.OPERATOR ">>>"
         position += 2
-        return Token Token.TYPE_OPERATOR ">>"
+        return Token Token.OPERATOR ">>"
       if peek == '=':
         position += 2
-        return Token Token.TYPE_OPERATOR ">="
+        return Token Token.OPERATOR ">="
       position++
-      return Token Token.TYPE_OPERATOR ">"
+      return Token Token.OPERATOR ">"
 
     if c == '!':
       if peek == '=':
         position += 2
-        return Token Token.TYPE_OPERATOR "!="
+        return Token Token.OPERATOR "!="
       position++
-      return Token Token.TYPE_OPERATOR "!"
+      return Token Token.OPERATOR "!"
 
     if c == '=':
       if peek == '=':
         position += 2
-        return Token Token.TYPE_OPERATOR "=="
+        return Token Token.OPERATOR "=="
       position++
-      return Token Token.TYPE_OPERATOR "="
+      return Token Token.OPERATOR "="
 
     if c == '&':
       if peek == '&':
         position += 2
-        return Token Token.TYPE_OPERATOR "&&"
+        return Token Token.OPERATOR "&&"
       position++
-      return Token Token.TYPE_OPERATOR "&"
+      return Token Token.OPERATOR "&"
 
     if c == '|':
       if peek == '|':
         position += 2
-        return Token Token.TYPE_OPERATOR "||"
+        return Token Token.OPERATOR "||"
       position++
-      return Token Token.TYPE_OPERATOR "|"
+      return Token Token.OPERATOR "|"
 
     if c == '(':
       position++
-      return Token Token.TYPE_LEFT_PAREN "("
+      return Token Token.LEFT_PAREN "("
 
     if c == ')':
       position++
-      return Token Token.TYPE_RIGHT_PAREN ")"
+      return Token Token.RIGHT_PAREN ")"
 
     if c == '{':
       position++
-      return Token Token.TYPE_LEFT_BRACE "{"
+      return Token Token.LEFT_BRACE "{"
 
     if c == '}':
       position++
-      return Token Token.TYPE_RIGHT_BRACE "}"
+      return Token Token.RIGHT_BRACE "}"
 
     if c == 'i' and
         peek == 'f' and
         not is_identifier (peek 2):
       position += 2
-      return Token Token.TYPE_IF "if"
+      return Token Token.IF "if"
 
     if c == 'e' and
         peek == 'l' and
@@ -234,7 +286,7 @@ class Scanner:
         (peek 3) == 'e' and
         not is_identifier (peek 4):
       position += 4
-      return Token Token.TYPE_ELSE "else"
+      return Token Token.ELSE "else"
 
     if c == 'w' and
         peek == 'h' and
@@ -243,14 +295,14 @@ class Scanner:
         (peek 4) == 'e' and
         not is_identifier (peek 5):
       position += 5
-      return Token Token.TYPE_WHILE "while"
+      return Token Token.WHILE "while"
 
     if c == 'l' and
         peek == 'e' and
         (peek 2) == 't' and
         not is_identifier (peek 3):
       position += 3
-      return Token Token.TYPE_LET "let"
+      return Token Token.LET "let"
 
     if c == 't' and
         peek == 'r' and
@@ -258,7 +310,7 @@ class Scanner:
         (peek 3) == 'e' and
         not is_identifier (peek 4):
       position += 4
-      return Token Token.TYPE_TRUE "true"
+      return Token Token.TRUE "true"
 
     if c == 'f' and
         peek == 'a' and
@@ -267,14 +319,35 @@ class Scanner:
         (peek 4) == 'e' and
         not is_identifier (peek 5):
       position += 5
-      return Token Token.TYPE_FALSE "false"
+      return Token Token.FALSE "false"
+
+    if c == 'c' and
+        peek == 'o' and
+        (peek 2) == 'n' and
+        (peek 3) == 't' and
+        (peek 4) == 'i' and
+        (peek 5) == 'n' and
+        (peek 6) == 'u' and
+        (peek 7) == 'e' and
+        not is_identifier (peek 8):
+      position += 8
+      return Token Token.CONTINUE "continue"
+
+    if c == 'b' and
+        peek == 'r' and
+        (peek 2) == 'e' and
+        (peek 3) == 'a' and
+        (peek 4) == 'k' and
+        not is_identifier (peek 5):
+      position += 5
+      return Token Token.BREAK "break"
 
     if is_identifier_start c:
       start := position
       position++
       while is_identifier current:
         position++
-      return Token Token.TYPE_IDENTIFIER code[start..position].copy
+      return Token Token.IDENTIFIER code[start..position].copy
 
     if '0' <= c <= '9':
       start := position
@@ -285,7 +358,7 @@ class Scanner:
         position++
         while '0' <= current <= '9':
           position++
-      return Token Token.TYPE_NUMBER code[start..position].copy
+      return Token Token.NUMBER code[start..position].copy
 
     if c == '"':
       start := position
@@ -295,15 +368,15 @@ class Scanner:
       if current == -1:
         throw "unterminated string"
       position++
-      return Token Token.TYPE_STRING code[start..position].copy
+      return Token Token.STRING code[start..position].copy
 
     if c == ';':
       position++
-      return Token Token.TYPE_SEMICOLON ";"
+      return Token Token.SEMICOLON ";"
 
     if c == ',':
       position++
-      return Token Token.TYPE_COMMA ","
+      return Token Token.COMMA ","
 
     throw "unexpected character: $(string.from_rune c)"
 
@@ -324,23 +397,25 @@ class Scanner:
     return is_identifier_start c or '0' <= c <= '9'
 
 class Token:
-  static TYPE_EOF ::= 0
-  static TYPE_NUMBER ::= 1
-  static TYPE_OPERATOR ::= 2
-  static TYPE_LEFT_PAREN ::= 3
-  static TYPE_RIGHT_PAREN ::= 4
-  static TYPE_IF ::= 5
-  static TYPE_ELSE ::= 6
-  static TYPE_WHILE ::= 7
-  static TYPE_LET ::= 8
-  static TYPE_IDENTIFIER ::= 9
-  static TYPE_LEFT_BRACE ::= 10
-  static TYPE_RIGHT_BRACE ::= 11
-  static TYPE_TRUE ::= 13
-  static TYPE_FALSE ::= 14
-  static TYPE_STRING ::= 15
-  static TYPE_SEMICOLON ::= 16
-  static TYPE_COMMA ::= 17
+  static EOF ::= 0
+  static NUMBER ::= 1
+  static OPERATOR ::= 2
+  static LEFT_PAREN ::= 3
+  static RIGHT_PAREN ::= 4
+  static IF ::= 5
+  static ELSE ::= 6
+  static WHILE ::= 7
+  static LET ::= 8
+  static IDENTIFIER ::= 9
+  static LEFT_BRACE ::= 10
+  static RIGHT_BRACE ::= 11
+  static TRUE ::= 13
+  static FALSE ::= 14
+  static STRING ::= 15
+  static SEMICOLON ::= 16
+  static COMMA ::= 17
+  static CONTINUE ::= 18
+  static BREAK ::= 19
 
   type/int
   value/string
@@ -349,6 +424,28 @@ class Token:
 
   stringify -> string:
     return "Token($(type) $(value))"
+
+token_type_string type/int -> string:
+  if type == Token.EOF: return "EOF"
+  if type == Token.NUMBER: return "NUMBER"
+  if type == Token.OPERATOR: return "OPERATOR"
+  if type == Token.LEFT_PAREN: return "LEFT_PAREN"
+  if type == Token.RIGHT_PAREN: return "RIGHT_PAREN"
+  if type == Token.IF: return "IF"
+  if type == Token.ELSE: return "ELSE"
+  if type == Token.WHILE: return "WHILE"
+  if type == Token.LET: return "LET"
+  if type == Token.IDENTIFIER: return "IDENTIFIER"
+  if type == Token.LEFT_BRACE: return "LEFT_BRACE"
+  if type == Token.RIGHT_BRACE: return "RIGHT_BRACE"
+  if type == Token.TRUE: return "TRUE"
+  if type == Token.FALSE: return "FALSE"
+  if type == Token.STRING: return "STRING"
+  if type == Token.SEMICOLON: return "SEMICOLON"
+  if type == Token.COMMA: return "COMMA"
+  if type == Token.CONTINUE: return "CONTINUE"
+  if type == Token.BREAK: return "BREAK"
+  unreachable
 
 class Parser:
   scanner_/Scanner
@@ -369,7 +466,7 @@ class Parser:
 
   consume type/int -> none:
     if current.type != type:
-      throw "expected $type, got $current.type $current.value"
+      throw "expected $(token_type_string type), got $(token_type_string current.type) $current.value"
     consume
 
   consume type/int value/string -> none:
@@ -381,65 +478,74 @@ class Parser:
     current = scanner_.next
     body := []
     is_first := true
-    while current.type != Token.TYPE_EOF:
+    while current.type != Token.EOF:
       body.add parse_statement
-    consume Token.TYPE_EOF
+    consume Token.EOF
     return Program body
 
   parse_statement -> Statement:
-    if current.type == Token.TYPE_LEFT_BRACE:
+    if current.type == Token.LEFT_BRACE:
       return parse_block
-    if current.type == Token.TYPE_LET:
+    if current.type == Token.LET:
       return parse_let
-    if current.type == Token.TYPE_IF:
+    if current.type == Token.IF:
       return parse_if
-    if current.type == Token.TYPE_WHILE:
+    if current.type == Token.WHILE:
       return parse_while
-    if current.type == Token.TYPE_SEMICOLON:
+    if current.type == Token.SEMICOLON:
+      consume
       return Nop
+    if current.type == Token.CONTINUE:
+      consume
+      consume Token.SEMICOLON
+      return Continue
+    if current.type == Token.BREAK:
+      consume
+      consume Token.SEMICOLON
+      return Break
     expression := parse_expression
-    consume Token.TYPE_SEMICOLON
+    consume Token.SEMICOLON
     return ExpressionStatement expression
 
   parse_block -> Block:
-    consume Token.TYPE_LEFT_BRACE
+    consume Token.LEFT_BRACE
     nodes := []
-    while current.type != Token.TYPE_RIGHT_BRACE and current.type != Token.TYPE_EOF:
+    while current.type != Token.RIGHT_BRACE and current.type != Token.EOF:
       node := parse_statement
       nodes.add node
-      if current.type == Token.TYPE_SEMICOLON:
-        consume Token.TYPE_SEMICOLON
-    consume Token.TYPE_RIGHT_BRACE
+      if current.type == Token.SEMICOLON:
+        consume Token.SEMICOLON
+    consume Token.RIGHT_BRACE
     return Block nodes
 
   parse_let -> Let:
-    consume Token.TYPE_LET
-    if current.type != Token.TYPE_IDENTIFIER:
+    consume Token.LET
+    if current.type != Token.IDENTIFIER:
       throw "expected identifier"
     name := current.value
-    consume Token.TYPE_IDENTIFIER
-    consume Token.TYPE_OPERATOR "="
+    consume Token.IDENTIFIER
+    consume Token.OPERATOR "="
     expression := parse_expression
-    consume Token.TYPE_SEMICOLON
+    consume Token.SEMICOLON
     return Let name expression
 
   parse_if -> If:
-    consume Token.TYPE_IF
-    consume Token.TYPE_LEFT_PAREN
+    consume Token.IF
+    consume Token.LEFT_PAREN
     condition := parse_expression
-    consume Token.TYPE_RIGHT_PAREN
+    consume Token.RIGHT_PAREN
     then := parse_statement
-    if current.type == Token.TYPE_ELSE:
-      consume Token.TYPE_ELSE
+    if current.type == Token.ELSE:
+      consume Token.ELSE
       else_ := parse_statement
       return If condition then else_
     return If condition then null
 
   parse_while -> While:
-    consume Token.TYPE_WHILE
-    consume Token.TYPE_LEFT_PAREN
+    consume Token.WHILE
+    consume Token.LEFT_PAREN
     condition := parse_expression
-    consume Token.TYPE_RIGHT_PAREN
+    consume Token.RIGHT_PAREN
     body := parse_statement
     return While condition body
 
@@ -448,9 +554,9 @@ class Parser:
 
   parse_assignment -> Expression:
     left := parse_logical_or
-    if current.type == Token.TYPE_OPERATOR and
+    if current.type == Token.OPERATOR and
         current.value == "=":
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       if left is not Reference:
         throw "expected identifier on left side of assignment"
       right := parse_assignment
@@ -459,133 +565,133 @@ class Parser:
 
   parse_logical_or -> Expression:
     left := parse_logical_and
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         current.value == "||":
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_logical_and
       left = Binary "||" left right
     return left
 
   parse_logical_and -> Expression:
     left := parse_equality
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         current.value == "&&":
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_equality
       left = Binary "&&" left right
     return left
 
   parse_equality -> Expression:
     left := parse_comparison
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         (current.value == "==" or
           current.value == "!="):
       op := current.value
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_comparison
       left = Binary op left right
     return left
 
   parse_comparison -> Expression:
     left := parse_bitwise_or
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         (current.value == "<" or
           current.value == ">" or
           current.value == "<=" or
           current.value == ">="):
       op := current.value
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_bitwise_or
       left = Binary op left right
     return left
 
   parse_bitwise_or -> Expression:
     left := parse_bitwise_xor
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         current.value == "|":
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_bitwise_xor
       left = Binary "|" left right
     return left
 
   parse_bitwise_xor -> Expression:
     left := parse_bitwise_and
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         current.value == "^":
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_bitwise_and
       left = Binary "^" left right
     return left
 
   parse_bitwise_and -> Expression:
     left := parse_shift
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         current.value == "&":
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_shift
       left = Binary "&" left right
     return left
 
   parse_shift -> Expression:
     left := parse_additive
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         (current.value == "<<" or
           current.value == ">>" or
           current.value == ">>>"):
       op := current.value
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_additive
       left = Binary op left right
     return left
 
   parse_additive -> Expression:
     left := parse_multiplicative
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         (current.value == "+" or
           current.value == "-"):
       op := current.value
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_multiplicative
       left = Binary op left right
     return left
 
   parse_multiplicative -> Expression:
     left := parse_unary
-    while current.type == Token.TYPE_OPERATOR and
+    while current.type == Token.OPERATOR and
         (current.value == "*" or
           current.value == "/" or
           current.value == "%"):
       op := current.value
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       right := parse_unary
       left = Binary op left right
     return left
 
   parse_unary -> Expression:
-    if current.type == Token.TYPE_OPERATOR and
+    if current.type == Token.OPERATOR and
         (current.value == "-" or
           current.value == "~" or
           current.value == "!"):
       op := current.value
-      consume Token.TYPE_OPERATOR
+      consume Token.OPERATOR
       return Unary op parse_unary
     return parse_primary
 
   parse_primary -> Expression:
-    if current.type == Token.TYPE_NUMBER:
+    if current.type == Token.NUMBER:
       value := current.value
-      consume Token.TYPE_NUMBER
+      consume Token.NUMBER
       return Number value
-    if current.type == Token.TYPE_IDENTIFIER:
+    if current.type == Token.IDENTIFIER:
       name := current.value
-      consume Token.TYPE_IDENTIFIER
-      if current.type == Token.TYPE_LEFT_PAREN:
-        consume Token.TYPE_LEFT_PAREN
+      consume Token.IDENTIFIER
+      if current.type == Token.LEFT_PAREN:
+        consume Token.LEFT_PAREN
         args := []
-        while current.type != Token.TYPE_RIGHT_PAREN:
+        while current.type != Token.RIGHT_PAREN:
           args.add parse_expression
-          if current.type == Token.TYPE_COMMA: consume
-        consume Token.TYPE_RIGHT_PAREN
+          if current.type == Token.COMMA: consume
+        consume Token.RIGHT_PAREN
         function/Function? := functions.get name
         if not function:
           throw "undefined function: $(name)"
@@ -594,25 +700,22 @@ class Parser:
               expected $(function.arity_), got $(args.size)"""
         return Call function args
       return Reference name
-    if current.type == Token.TYPE_LEFT_PAREN:
-      consume Token.TYPE_LEFT_PAREN
+    if current.type == Token.LEFT_PAREN:
+      consume Token.LEFT_PAREN
       expression := parse_expression
-      consume Token.TYPE_RIGHT_PAREN
+      consume Token.RIGHT_PAREN
       return expression
-    if current.type == Token.TYPE_TRUE:
-      consume Token.TYPE_TRUE
+    if current.type == Token.TRUE:
+      consume Token.TRUE
       return Boolean "true"
-    if current.type == Token.TYPE_FALSE:
-      consume Token.TYPE_FALSE
+    if current.type == Token.FALSE:
+      consume Token.FALSE
       return Boolean "false"
-    if current.type == Token.TYPE_STRING:
+    if current.type == Token.STRING:
       value := current.value
-      consume Token.TYPE_STRING
+      consume Token.STRING
       return String value
     throw "unexpected token: $(current.value)"
-
-abstract class Node:
-  abstract eval scope/List -> any
 
 class Program:
   body/List
@@ -621,13 +724,13 @@ class Program:
 
   eval:
     scope := [{:}]
-    body.do: it.eval scope
+    body.do: it.eval scope (: throw "not in loop") (: throw "not in loop")
 
-abstract class Statement extends Node:
-  abstract eval scope/List -> any
+abstract class Statement:
+  abstract eval scope/List [brek] [cont] -> any
 
 class Nop extends Statement:
-  eval scope/List:
+  eval scope/List [brek] [cont] -> any:
     return null
 
 class Block extends Statement:
@@ -635,9 +738,9 @@ class Block extends Statement:
 
   constructor .statements:
 
-  eval scope/List -> any:
+  eval scope/List [brek] [cont] -> any:
     scope.add {:}
-    statements.do: it.eval scope
+    statements.do: it.eval scope brek cont
     scope.resize (scope.size - 1)
     return null
 
@@ -647,7 +750,7 @@ class Let extends Statement:
 
   constructor .name .expression:
 
-  eval scope/List:
+  eval scope/List [brek] [cont] -> any:
     value := expression.eval scope
     scope.last[name] = value
     return null
@@ -659,13 +762,13 @@ class If extends Statement:
 
   constructor .condition .then .els:
 
-  eval scope/List:
+  eval scope/List [brek] [cont]:
     t := condition.eval scope
     if condition.eval scope:
-      then.eval scope
+      then.eval scope brek cont
       return null
     if els:
-      return els.eval scope
+      return els.eval scope brek cont
     return null
 
 class While extends Statement:
@@ -674,20 +777,31 @@ class While extends Statement:
 
   constructor .condition .body:
 
-  eval scope/List:
+  eval scope/List [brek] [cont]:
     while condition.eval scope:
-      body.eval scope
+      body.eval scope (: return null) (:
+        continue)
     return null
+
+class Continue extends Statement:
+  eval scope/List [brek] [cont]:
+    cont.call
+    unreachable
+
+class Break extends Statement:
+  eval scope/List [brek] [cont]:
+    brek.call
+    unreachable
 
 class ExpressionStatement extends Statement:
   expression/Expression
 
   constructor .expression:
 
-  eval scope/List:
+  eval scope/List [brek] [cont] -> any:
     return expression.eval scope
 
-abstract class Expression extends Node:
+abstract class Expression:
   abstract eval scope/List -> any
 
 class Assignment extends Expression:
