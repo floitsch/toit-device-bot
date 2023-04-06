@@ -1,1 +1,6 @@
-# Toit Package File.
+dependencies:
+  device_bot:
+    path: ..
+  host:
+    url: github.com/toitlang/pkg-host
+    version: ^1.9.0

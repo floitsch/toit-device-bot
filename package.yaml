@@ -1,3 +1,5 @@
+name: device_bot
+description: A bot running on embedded devices, using OpenAI to interpret commands.
 dependencies:
   discord:
     path: ../toit-discord

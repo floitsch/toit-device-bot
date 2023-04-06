@@ -1,84 +1,60 @@
-# MyPackage
+# Device Bot
 
-A template repository for creating a Toit package.
+A bot that runs on a device and interprets commands using OpenAI.
 
-## Toit package
-Use `toit.pkg describe` or `toit pkg describe` (depending on which Toit
-variant you use) to see how https://pkg.toit.io will extract package
-information from your repo when you publish the package.
+The bot comes with a small interpreter for a tiny C-like language.
+When the user sends a request to the device (typically through a chat
+application), the device sends the request to the OpenAI API, instructing
+it to generate a program that works on the language interpreter.
 
-Either add a `name: ...` entry to the package.yaml or change the title
-(first line) of this README to the package name.
+Developers can provide their own functions with descriptions which
+are also sent to the OpenAI API. For example, a device with a
+temperature sensor and a light sensor could provide the functions
+`get_temperature` and `set_light`.
 
-Either add a `description: ...` entry to the package.yaml or ensure
-that the first paragraph of this README can be used as a description.
+## Example
 
-## Structure
-Code that should be used by other developers must live in the `src` folder.
+The following example shows how to use the device bot to control a light depending
+on the temperature.
 
-Examples should live in `examples`. For bigger examples, or examples that
-use more packages, create a subfolder.
-
-Tests live in the `tests` folder.
-
-## Copyright
-Don't forget to update the copyright holder in the license files.
-There are (up to) three license files:
-- `LICENSE`: usually MIT
-- `examples/EXAMPLES_LICENSE`: usually BSD0
-- `tests/TESTS_LICENSE`: usually BSD0
-
-We recommend to use the following Copyright header in `src` files (with your
-copyright):
-
+Warning: running this program will fill up your terminal with output (due to the
+`print` statements).
 ```
-// Copyright (C) 2022 Jane/John Doe
-// Use of this source code is governed by an MIT-style license that can be
-// found in the package's LICENSE file.
-```
+import device_bot show *
+import host.os  // Only needed for `os.env`.
 
-Similarly, you can use the following header for tests and examples:
-```
-// Copyright (C) 2022 Jane/John Doe
-// Use of this source code is governed by a Zero-Clause BSD license that can
-// be found in the tests/TESTS_LICENSE file.
-```
-and
-```
-// Copyright (C) 2022 Jane/John Doe
-// Use of this source code is governed by a Zero-Clause BSD license that can
-// be found in the examples/EXAMPLES_LICENSE file.
-```
+main:
+  openai_key := os.env.get "OPENAI_KEY"
 
-## Local package
-Examples and tests can have different dependencies than the package. This is,
-why they have their own package.yaml/package.lock.
+  if not openai_key:
+    print "Please set the OPENAI_KEY environment variable."
+    exit 1
 
-Open the examples (resp. tests) folder with a separate instance of your IDE.
-For vscode you could just write `code examples`.
+  main
+      --openai_key=openai_key
 
-Install this package as a local package.
-```
-cd examples
-toit.pkg install --local --name=YOUR_PACKAGE_NAME ..
+main --openai_key/string:
+  device_bot := DeviceBot --openai_key=openai_key [
+    Function
+        --syntax="get_temperature()"
+        --description="Gets the current temperature in Celsius. Returns a float."
+        --action=:: | args/List |
+          print "getting temperature"
+          (random 0 30).to_float,
+    Function
+        --syntax="set_light(<on_off>)"
+        --description="Turns the light on or off, depending on the boolean parameter"
+        --action=:: | args/List |
+          message := args[0]
+          print "setting light to $message"
+  ]
+
+  // The request here typically comes from a chat application.
+  device_bot.handle_message --when_started=(:: print "Running the program") """
+    Wait 2 seconds, then turn the light off.
+    Then continuously measure the temperature and turn the light on if the temperature is above 20 degrees Celsius.
+    """
 ```
 
-This installs the package located at ".." (here the root of the repository) with
-your package name.
-
-Consequently examples and tests can import the package as if it was installed
-from the Internet. This way, tests and examples use the same syntax as
-users of the package.
-
-## Publish
-Make sure to run `toit.pkg describe` to verify that the data is correct.
-
-This repository comes with a `.github/workflows/publish.xml` file which automatically
-publishes the Toit package for every release. You can just draft a new release on
-Github.
-It is important that the release has a semver tag (like `v1.2.3`).
-
-Alternatively, a package can be published by hand:
-0. Ensure that everything looks good (`toit.pkg describe`).
-1. Add a semver tag (like `v1.0.0`).
-2. Go to https://pkg.toit.io/publish and submit your package.
+## Features and bugs
+Please file feature requests and bugs at the [issue tracker](https://github.com/floitsch/toit-device-bot/issues).
