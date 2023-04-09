@@ -4,13 +4,17 @@ A bot that runs on a device and interprets commands using OpenAI.
 
 The bot comes with a small interpreter for a tiny C-like language.
 When the user sends a request to the device (typically through a chat
-application), the device sends the request to the OpenAI API, instructing
+application, like [telegram](https://pkg.toit.io/package/github.com%2Ffloitsch%2Ftoit-telegram)
+or [discord](https://pkg.toit.io/package/github.com%2Ffloitsch%2Ftoit-discord)),
+the device sends the request to the OpenAI API, instructing
 it to generate a program that works on the language interpreter.
 
 Developers can provide their own functions with descriptions which
 are also sent to the OpenAI API. For example, a device with a
 temperature sensor and a light sensor could provide the functions
 `get_temperature` and `set_light`.
+
+For chat applications see the "discord" and "telegram" packages.
 
 ## Example
 

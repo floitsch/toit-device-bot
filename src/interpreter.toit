@@ -47,6 +47,14 @@ class Function:
 
 BUILTINS ::= [
   Function
+      --syntax="to_int(<num_or_string>)"
+      --description="Converts a number or string to an integer."
+      --action=:: | args |
+          num_or_string := args[0]
+          num_or_string is string
+              ? int.parse num_or_string
+              : num_or_string.to_int,
+  Function
       --syntax="print(<message>)"
       --description="Prints a message."
       --action=:: | args |
@@ -87,14 +95,14 @@ BUILTINS ::= [
       --description="Gets a value from a list."
       --action=:: | args |
           list/List := args[0]
-          index := args[1]
+          index := args[1].to_int
           list[index],
   Function
       --syntax="list_set(<list>, <index>, <value>)"
       --description="Sets a value in a list."
       --action=:: | args |
           list/List := args[0]
-          index := args[1]
+          index := args[1].to_int
           value := args[2]
           list[index] = value,
   Function
@@ -833,7 +841,7 @@ class Unary extends Expression:
       return ~value
     if op == "!":
       return not value
-    throw "unexpected operator: $(op)"
+    throw "unexpected operator: $op"
 
 class Binary extends Expression:
   op/string
@@ -860,7 +868,7 @@ class Binary extends Expression:
     if op == "*":
       return left_value * right_value
     if op == "/":
-      return left_value / right_value
+      return left_value * 1.0 / right_value
     if op == "%":
       return left_value % right_value
     if op == "&":

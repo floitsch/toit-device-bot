@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be found
 // in the LICENSE file.
 
+import log
 import openai
 import .interpreter
 export Function
@@ -15,6 +16,7 @@ LANGUAGE_DESCRIPTION ::= """
   Given a simplified C-like programming language with the following builtin functions:
   - print(<message>).
   - sleep(<ms>).
+  - to_int(<number or string>). Converts the given number or string to an integer.
   - random(<min>, <max>).
   - now(): Returns the ms since the epoch.
   - List functions: 'list_create()', 'list_add(<list>, <value>)', 'list_get', 'list_set', 'list_size'.
@@ -40,9 +42,9 @@ LANGUAGE_DESCRIPTION ::= """
 
   let keys = map_keys(map);
   // Print the element in the middle of the key list.
-  print(list_get(keys, list_size(keys) / 2));
+  print(list_get(keys, to_int(list_size(keys) / 2)));
   // Print the average of the squares.
-  print(sum * 1.0 / list_size(keys));
+  print(sum / list_size(keys));
   ```
 
   This language is *not* Javascript. It has no objects (not even 'Math') or self-defined functions. No 'const'."""
@@ -57,10 +59,12 @@ class DeviceBot:
   openai_client_/openai.Client? := ?
   function_description_message_/string ::= ?
   functions_/List
+  logger_/log.Logger
 
   executing_task_/Task? := null
 
-  constructor --openai_key/string functions/List:
+  constructor --openai_key/string functions/List --logger/log.Logger=log.default:
+    logger_ = logger.with_name "DeviceBot"
     functions_ = functions
     builtins := {}
     BUILTINS.do: | builtin/Function |
@@ -104,10 +108,11 @@ class DeviceBot:
 
       // Give OpenAI 3 attempts at correcting the program.
       for i := 0; i < 3; i++:
-        print "Requesting completion from OpenAI"
-        print "Conversation: $conversation"
+        logger_.debug "requesting completion from OpenAI" --tags={
+          "conversation": conversation,
+        }
         response/string? := openai_client_.complete_chat --conversation=conversation --max_tokens=500
-        print "Got response:\n$response"
+        logger_.debug "got response" --tags={ "data": response }
         if response.ends_with "```" or response.ends_with "```\n":
           // Grrr. Bot added a code block. Potentially even adding some noise.
           start_pos := response.index_of "```"
@@ -117,10 +122,10 @@ class DeviceBot:
           program := parse response functions_
           response = null
           conversation = null
-          when_started.call "Running the program"
+          when_started.call
           program.eval
         if exception and not conversation:
-          print "Running the program failed with the following error: $exception"
+          logger_.info "running the program failed" --tags={ "error": exception }
         if not exception or not conversation: break
         if conversation:
           conversation.add
