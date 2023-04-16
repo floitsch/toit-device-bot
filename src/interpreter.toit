@@ -725,6 +725,11 @@ class Parser:
       return String value
     throw "unexpected token: $(current.value)"
 
+
+current_dot_id_counter_ := 0
+generate_dot_id_:
+  return "node_$(current_dot_id_counter_++)"
+
 class Program:
   body/List
 
@@ -734,12 +739,27 @@ class Program:
     scope := [{:}]
     body.do: it.eval scope (: throw "not in loop") (: throw "not in loop")
 
+  dot_out:
+    my_id := generate_dot_id_
+    print "digraph ast {"
+    print "  node [shape=box]"
+    print "  $my_id [label=\"Program\"]"
+    body.do: it.dot_out my_id ""
+    print "}"
+
 abstract class Statement:
   abstract eval scope/List [brek] [cont] -> any
+
+  abstract dot_out parent/string edge_label/string
 
 class Nop extends Statement:
   eval scope/List [brek] [cont] -> any:
     return null
+
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"Nop\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
 
 class Block extends Statement:
   statements/List
@@ -752,6 +772,12 @@ class Block extends Statement:
     scope.resize (scope.size - 1)
     return null
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"...\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    statements.do: it.dot_out my_id ""
+
 class Let extends Statement:
   name/string
   expression/Expression
@@ -763,6 +789,12 @@ class Let extends Statement:
     scope.last[name] = value
     return null
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$name :=\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    expression.dot_out my_id "value"
+
 class If extends Statement:
   condition/Expression
   then/Statement
@@ -771,13 +803,20 @@ class If extends Statement:
   constructor .condition .then .els:
 
   eval scope/List [brek] [cont]:
-    t := condition.eval scope
     if condition.eval scope:
-      then.eval scope brek cont
-      return null
-    if els:
+      return then.eval scope brek cont
+    else if els:
       return els.eval scope brek cont
     return null
+
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"if\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    condition.dot_out my_id "condition"
+    then.dot_out my_id "then"
+    if els:
+      els.dot_out my_id "else"
 
 class While extends Statement:
   condition/Expression
@@ -791,15 +830,32 @@ class While extends Statement:
         continue)
     return null
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"while\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    condition.dot_out my_id "condition"
+    body.dot_out my_id "body"
+
 class Continue extends Statement:
   eval scope/List [brek] [cont]:
     cont.call
     unreachable
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"continue\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+
 class Break extends Statement:
   eval scope/List [brek] [cont]:
     brek.call
     unreachable
+
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"break\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
 
 class ExpressionStatement extends Statement:
   expression/Expression
@@ -809,8 +865,14 @@ class ExpressionStatement extends Statement:
   eval scope/List [brek] [cont] -> any:
     return expression.eval scope
 
+  dot_out parent/string edge_label/string:
+    // No need to pollute the graph with expression statements.
+    expression.dot_out parent edge_label
+
 abstract class Expression:
   abstract eval scope/List -> any
+
+  abstract dot_out parent/string edge_label/string
 
 class Assignment extends Expression:
   left/Reference
@@ -827,6 +889,13 @@ class Assignment extends Expression:
         return value
     throw "undefined variable: $(name)"
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"=\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    left.dot_out my_id "left"
+    right.dot_out my_id "right"
+
 class Unary extends Expression:
   op/string
   expression/Expression
@@ -842,6 +911,12 @@ class Unary extends Expression:
     if op == "!":
       return not value
     throw "unexpected operator: $op"
+
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$op\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    expression.dot_out my_id "value"
 
 class Binary extends Expression:
   op/string
@@ -901,6 +976,13 @@ class Binary extends Expression:
       return left_value >>> right_value
     throw "unexpected operator: $(op)"
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$op\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    left.dot_out my_id "left"
+    right.dot_out my_id "right"
+
 class Number extends Expression:
   value/num
 
@@ -914,6 +996,11 @@ class Number extends Expression:
     return int.parse string_value --on_error=:
       return float.parse string_value
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$value\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+
 class Reference extends Expression:
   name/string
 
@@ -925,6 +1012,11 @@ class Reference extends Expression:
         return scope[i][name]
     throw "undefined variable: $(name)"
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$name\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+
 class Call extends Expression:
   function/Function
   args/List
@@ -935,6 +1027,13 @@ class Call extends Expression:
     evaluated_args := args.map: it.eval scope
     return function.action.call evaluated_args
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$function.name()\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+    for i := 0; i < args.size; i += 1:
+      args[i].dot_out my_id "arg $i"
+
 class Boolean extends Expression:
   value/bool
 
@@ -944,6 +1043,11 @@ class Boolean extends Expression:
   eval scope/List -> any:
     return value
 
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"$value\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
+
 class String extends Expression:
   value/string
 
@@ -951,3 +1055,8 @@ class String extends Expression:
 
   eval scope/List -> any:
     return value[1 .. value.size - 1]
+
+  dot_out parent/string edge_label/string:
+    my_id := generate_dot_id_
+    print "  $my_id [label=\"'$value'\"]"
+    print "  $parent -> $my_id [label=\"$edge_label\"]"
