@@ -92,7 +92,7 @@ class DeviceBot:
       executing_task_.cancel
       executing_task_ = null
 
-  handle_message message/string? --when_started/Lambda:
+  handle_message message/string? --when_started/Lambda --on_error/Lambda?=null:
     if executing_task_:
       executing_task_.cancel
       executing_task_ = null
@@ -106,7 +106,8 @@ class DeviceBot:
         openai.ChatMessage.user request_message,
       ]
 
-      // Give OpenAI 3 attempts at correcting the program.
+      // Give OpenAI 3 attempts to get something parseable.
+      succeeded := false
       for i := 0; i < 3; i++:
         logger_.debug "requesting completion from OpenAI" --tags={
           "conversation": conversation,
@@ -124,17 +125,9 @@ class DeviceBot:
           conversation = null
           when_started.call
           program.eval
+          succeeded = true
         if exception and not conversation:
           logger_.info "running the program failed" --tags={ "error": exception }
         if not exception or not conversation: break
-        if conversation:
-          conversation.add
-              openai.ChatMessage.assistant response
-          conversation.add
-              openai.ChatMessage.user "I got the following error: $exception."
-          conversation.add
-              openai.ChatMessage.user """
-                Remember: no self-defined functions! No objects! This is an extremely simple language.
-                Fix the program.
-                Only respond with the program!
-                Don't add any apology, instructions or explanations!"""
+
+      if not succeeded and on_error: on_error.call

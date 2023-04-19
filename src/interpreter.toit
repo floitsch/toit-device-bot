@@ -64,14 +64,14 @@ BUILTINS ::= [
       --syntax="sleep(<ms>)"
       --description="Sleeps for a given amount of milliseconds."
       --action=:: | args |
-          ms := args[0]
-          sleep --ms=ms,
+          ms/num := args[0]
+          sleep --ms=(ms.to_int),
   Function
       --syntax="random(<min>, <max>)"
       --description="Returns a random integer between min and max."
       --action=:: | args |
-          min := args[0]
-          max := args[1]
+          min := (args[0] as num).to_int
+          max := (args[1] as num).to_int
           random min max,
   Function
       --syntax="now()"
