@@ -3,7 +3,7 @@ description: A bot running on embedded devices, using OpenAI to interpret comman
 dependencies:
   host:
     url: github.com/toitlang/pkg-host
-    version: ^1.9.0
+    version: ^1.14.1
   openai:
     url: github.com/toitware/toit-openai
     version: ^0.1.0
