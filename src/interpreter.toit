@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style license that can be found
 // in the LICENSE file.
 
-import .device_bot
+import .device-bot
 
 /**
 A function in the language.
@@ -28,21 +28,21 @@ class Function:
     invoked with a list of arguments.
   */
   constructor --.syntax --.description --.action:
-    paren_start := syntax.index_of "("
-    name = syntax[..paren_start].trim
-    paren_end := syntax.index_of ")"
-    params := syntax[paren_start + 1..paren_end]
+    paren-start := syntax.index-of "("
+    name = syntax[..paren-start].trim
+    paren-end := syntax.index-of ")"
+    params := syntax[paren-start + 1..paren-end]
     if params.trim == "":
       arity_ = 0
     else:
       count := 0
-      start_offset := 0
-      while start_offset < params.size:
-        start_offset = params.index_of "," start_offset
-        if start_offset == -1:
+      start-offset := 0
+      while start-offset < params.size:
+        start-offset = params.index-of "," start-offset
+        if start-offset == -1:
           break
         count++
-        start_offset++
+        start-offset++
       arity_ = count + 1
 
 BUILTINS ::= [
@@ -50,10 +50,10 @@ BUILTINS ::= [
       --syntax="to_int(<num_or_string>)"
       --description="Converts a number or string to an integer."
       --action=:: | args |
-          num_or_string := args[0]
-          num_or_string is string
-              ? int.parse num_or_string
-              : num_or_string.to_int,
+          num-or-string := args[0]
+          num-or-string is string
+              ? int.parse num-or-string
+              : num-or-string.to-int,
   Function
       --syntax="print(<message>)"
       --description="Prints a message."
@@ -65,19 +65,19 @@ BUILTINS ::= [
       --description="Sleeps for a given amount of milliseconds."
       --action=:: | args |
           ms/num := args[0]
-          sleep --ms=(ms.to_int),
+          sleep --ms=(ms.to-int),
   Function
       --syntax="random(<min>, <max>)"
       --description="Returns a random integer between min and max."
       --action=:: | args |
-          min := (args[0] as num).to_int
-          max := (args[1] as num).to_int
+          min := (args[0] as num).to-int
+          max := (args[1] as num).to-int
           random min max,
   Function
       --syntax="now()"
       --description="Returns the current time in milliseconds since epoch."
       --action=:: | args |
-          Time.now.ms_since_epoch,
+          Time.now.ms-since-epoch,
   Function
       --syntax="list_create()"
       --description="Creates a new list."
@@ -95,14 +95,14 @@ BUILTINS ::= [
       --description="Gets a value from a list."
       --action=:: | args |
           list/List := args[0]
-          index := args[1].to_int
+          index := args[1].to-int
           list[index],
   Function
       --syntax="list_set(<list>, <index>, <value>)"
       --description="Sets a value in a list."
       --action=:: | args |
           list/List := args[0]
-          index := args[1].to_int
+          index := args[1].to-int
           value := args[2]
           list[index] = value,
   Function
@@ -160,16 +160,16 @@ BUILTINS ::= [
           map.size,
 ]
 
-builtins_description -> string:
+builtins-description -> string:
   result := ""
   BUILTINS.do: | function/Function |
       result += "- $function.syntax: $function.description\n"
   return result
 
-parse code/string user_functions/List -> Program:
+parse code/string user-functions/List -> Program:
   scanner := Scanner code
-  parser := Parser scanner BUILTINS user_functions
-  return parser.parse_program
+  parser := Parser scanner BUILTINS user-functions
+  return parser.parse-program
 
 class Scanner:
   code/string
@@ -181,9 +181,9 @@ class Scanner:
     if position >= code.size:
       return Token Token.EOF ""
 
-    keep_removing_spaces_and_comments := true
-    while keep_removing_spaces_and_comments:
-      keep_removing_spaces_and_comments = false
+    keep-removing-spaces-and-comments := true
+    while keep-removing-spaces-and-comments:
+      keep-removing-spaces-and-comments = false
 
       while position < code.size:
         c := code[position]
@@ -197,7 +197,7 @@ class Scanner:
         // Eat until end of line.
         while current != '\n' and current != -1:
           position++
-        keep_removing_spaces_and_comments = true
+        keep-removing-spaces-and-comments = true
 
 
     if position >= code.size:
@@ -213,7 +213,7 @@ class Scanner:
         c == '^' or
         c == '~':
       position++
-      return Token Token.OPERATOR (string.from_rune c)
+      return Token Token.OPERATOR (string.from-rune c)
 
     if c == '<':
       if peek == '<':
@@ -268,23 +268,23 @@ class Scanner:
 
     if c == '(':
       position++
-      return Token Token.LEFT_PAREN "("
+      return Token Token.LEFT-PAREN "("
 
     if c == ')':
       position++
-      return Token Token.RIGHT_PAREN ")"
+      return Token Token.RIGHT-PAREN ")"
 
     if c == '{':
       position++
-      return Token Token.LEFT_BRACE "{"
+      return Token Token.LEFT-BRACE "{"
 
     if c == '}':
       position++
-      return Token Token.RIGHT_BRACE "}"
+      return Token Token.RIGHT-BRACE "}"
 
     if c == 'i' and
         peek == 'f' and
-        not is_identifier (peek 2):
+        not is-identifier (peek 2):
       position += 2
       return Token Token.IF "if"
 
@@ -292,7 +292,7 @@ class Scanner:
         peek == 'l' and
         (peek 2) == 's' and
         (peek 3) == 'e' and
-        not is_identifier (peek 4):
+        not is-identifier (peek 4):
       position += 4
       return Token Token.ELSE "else"
 
@@ -301,14 +301,14 @@ class Scanner:
         (peek 2) == 'i' and
         (peek 3) == 'l' and
         (peek 4) == 'e' and
-        not is_identifier (peek 5):
+        not is-identifier (peek 5):
       position += 5
       return Token Token.WHILE "while"
 
     if c == 'l' and
         peek == 'e' and
         (peek 2) == 't' and
-        not is_identifier (peek 3):
+        not is-identifier (peek 3):
       position += 3
       return Token Token.LET "let"
 
@@ -316,7 +316,7 @@ class Scanner:
         peek == 'r' and
         (peek 2) == 'u' and
         (peek 3) == 'e' and
-        not is_identifier (peek 4):
+        not is-identifier (peek 4):
       position += 4
       return Token Token.TRUE "true"
 
@@ -325,7 +325,7 @@ class Scanner:
         (peek 2) == 'l' and
         (peek 3) == 's' and
         (peek 4) == 'e' and
-        not is_identifier (peek 5):
+        not is-identifier (peek 5):
       position += 5
       return Token Token.FALSE "false"
 
@@ -337,7 +337,7 @@ class Scanner:
         (peek 5) == 'n' and
         (peek 6) == 'u' and
         (peek 7) == 'e' and
-        not is_identifier (peek 8):
+        not is-identifier (peek 8):
       position += 8
       return Token Token.CONTINUE "continue"
 
@@ -346,14 +346,14 @@ class Scanner:
         (peek 2) == 'e' and
         (peek 3) == 'a' and
         (peek 4) == 'k' and
-        not is_identifier (peek 5):
+        not is-identifier (peek 5):
       position += 5
       return Token Token.BREAK "break"
 
-    if is_identifier_start c:
+    if is-identifier-start c:
       start := position
       position++
-      while is_identifier current:
+      while is-identifier current:
         position++
       return Token Token.IDENTIFIER code[start..position].copy
 
@@ -386,7 +386,7 @@ class Scanner:
       position++
       return Token Token.COMMA ","
 
-    throw "unexpected character: $(string.from_rune c)"
+    throw "unexpected character: $(string.from-rune c)"
 
   current -> int:
     if position < code.size:
@@ -398,25 +398,25 @@ class Scanner:
       return code[position + n]
     return -1
 
-  is_identifier_start c/int --start/bool=false -> bool:
+  is-identifier-start c/int --start/bool=false -> bool:
     return 'a' <= c <= 'z' or 'A' <= c <= 'Z' or c == '_'
 
-  is_identifier c/int -> bool:
-    return is_identifier_start c or '0' <= c <= '9'
+  is-identifier c/int -> bool:
+    return is-identifier-start c or '0' <= c <= '9'
 
 class Token:
   static EOF ::= 0
   static NUMBER ::= 1
   static OPERATOR ::= 2
-  static LEFT_PAREN ::= 3
-  static RIGHT_PAREN ::= 4
+  static LEFT-PAREN ::= 3
+  static RIGHT-PAREN ::= 4
   static IF ::= 5
   static ELSE ::= 6
   static WHILE ::= 7
   static LET ::= 8
   static IDENTIFIER ::= 9
-  static LEFT_BRACE ::= 10
-  static RIGHT_BRACE ::= 11
+  static LEFT-BRACE ::= 10
+  static RIGHT-BRACE ::= 11
   static TRUE ::= 13
   static FALSE ::= 14
   static STRING ::= 15
@@ -433,19 +433,19 @@ class Token:
   stringify -> string:
     return "Token($(type) $(value))"
 
-token_type_string type/int -> string:
+token-type-string type/int -> string:
   if type == Token.EOF: return "EOF"
   if type == Token.NUMBER: return "NUMBER"
   if type == Token.OPERATOR: return "OPERATOR"
-  if type == Token.LEFT_PAREN: return "LEFT_PAREN"
-  if type == Token.RIGHT_PAREN: return "RIGHT_PAREN"
+  if type == Token.LEFT-PAREN: return "LEFT_PAREN"
+  if type == Token.RIGHT-PAREN: return "RIGHT_PAREN"
   if type == Token.IF: return "IF"
   if type == Token.ELSE: return "ELSE"
   if type == Token.WHILE: return "WHILE"
   if type == Token.LET: return "LET"
   if type == Token.IDENTIFIER: return "IDENTIFIER"
-  if type == Token.LEFT_BRACE: return "LEFT_BRACE"
-  if type == Token.RIGHT_BRACE: return "RIGHT_BRACE"
+  if type == Token.LEFT-BRACE: return "LEFT_BRACE"
+  if type == Token.RIGHT-BRACE: return "RIGHT_BRACE"
   if type == Token.TRUE: return "TRUE"
   if type == Token.FALSE: return "FALSE"
   if type == Token.STRING: return "STRING"
@@ -460,13 +460,13 @@ class Parser:
   current/Token? := null
   functions/Map
 
-  constructor .scanner_ builtins_list/List user_function_list/List:
+  constructor .scanner_ builtins-list/List user-function-list/List:
     functions = {:}
-    builtins_list.do: | function/Function |
+    builtins-list.do: | function/Function |
       functions[function.name] = function
 
     // User functions override builtins.
-    user_function_list.do: | function/Function |
+    user-function-list.do: | function/Function |
       functions[function.name] = function
 
   consume -> none:
@@ -474,7 +474,7 @@ class Parser:
 
   consume type/int -> none:
     if current.type != type:
-      throw "expected $(token_type_string type), got $(token_type_string current.type) $current.value"
+      throw "expected $(token-type-string type), got $(token-type-string current.type) $current.value"
     consume
 
   consume type/int value/string -> none:
@@ -482,24 +482,24 @@ class Parser:
       throw "expected $(type) $(value)"
     consume
 
-  parse_program -> Program:
+  parse-program -> Program:
     current = scanner_.next
     body := []
-    is_first := true
+    is-first := true
     while current.type != Token.EOF:
-      body.add parse_statement
+      body.add parse-statement
     consume Token.EOF
     return Program body
 
-  parse_statement -> Statement:
-    if current.type == Token.LEFT_BRACE:
-      return parse_block
+  parse-statement -> Statement:
+    if current.type == Token.LEFT-BRACE:
+      return parse-block
     if current.type == Token.LET:
-      return parse_let
+      return parse-let
     if current.type == Token.IF:
-      return parse_if
+      return parse-if
     if current.type == Token.WHILE:
-      return parse_while
+      return parse-while
     if current.type == Token.SEMICOLON:
       consume
       return Nop
@@ -511,97 +511,97 @@ class Parser:
       consume
       consume Token.SEMICOLON
       return Break
-    expression := parse_expression
+    expression := parse-expression
     consume Token.SEMICOLON
     return ExpressionStatement expression
 
-  parse_block -> Block:
-    consume Token.LEFT_BRACE
+  parse-block -> Block:
+    consume Token.LEFT-BRACE
     nodes := []
-    while current.type != Token.RIGHT_BRACE and current.type != Token.EOF:
-      node := parse_statement
+    while current.type != Token.RIGHT-BRACE and current.type != Token.EOF:
+      node := parse-statement
       nodes.add node
       if current.type == Token.SEMICOLON:
         consume Token.SEMICOLON
-    consume Token.RIGHT_BRACE
+    consume Token.RIGHT-BRACE
     return Block nodes
 
-  parse_let -> Let:
+  parse-let -> Let:
     consume Token.LET
     if current.type != Token.IDENTIFIER:
       throw "expected identifier"
     name := current.value
     consume Token.IDENTIFIER
     consume Token.OPERATOR "="
-    expression := parse_expression
+    expression := parse-expression
     consume Token.SEMICOLON
     return Let name expression
 
-  parse_if -> If:
+  parse-if -> If:
     consume Token.IF
-    consume Token.LEFT_PAREN
-    condition := parse_expression
-    consume Token.RIGHT_PAREN
-    then := parse_statement
+    consume Token.LEFT-PAREN
+    condition := parse-expression
+    consume Token.RIGHT-PAREN
+    then := parse-statement
     if current.type == Token.ELSE:
       consume Token.ELSE
-      else_ := parse_statement
+      else_ := parse-statement
       return If condition then else_
     return If condition then null
 
-  parse_while -> While:
+  parse-while -> While:
     consume Token.WHILE
-    consume Token.LEFT_PAREN
-    condition := parse_expression
-    consume Token.RIGHT_PAREN
-    body := parse_statement
+    consume Token.LEFT-PAREN
+    condition := parse-expression
+    consume Token.RIGHT-PAREN
+    body := parse-statement
     return While condition body
 
-  parse_expression -> Expression:
-    return parse_assignment
+  parse-expression -> Expression:
+    return parse-assignment
 
-  parse_assignment -> Expression:
-    left := parse_logical_or
+  parse-assignment -> Expression:
+    left := parse-logical-or
     if current.type == Token.OPERATOR and
         current.value == "=":
       consume Token.OPERATOR
       if left is not Reference:
         throw "expected identifier on left side of assignment"
-      right := parse_assignment
+      right := parse-assignment
       return Assignment (left as Reference) right
     return left
 
-  parse_logical_or -> Expression:
-    left := parse_logical_and
+  parse-logical-or -> Expression:
+    left := parse-logical-and
     while current.type == Token.OPERATOR and
         current.value == "||":
       consume Token.OPERATOR
-      right := parse_logical_and
+      right := parse-logical-and
       left = Binary "||" left right
     return left
 
-  parse_logical_and -> Expression:
-    left := parse_equality
+  parse-logical-and -> Expression:
+    left := parse-equality
     while current.type == Token.OPERATOR and
         current.value == "&&":
       consume Token.OPERATOR
-      right := parse_equality
+      right := parse-equality
       left = Binary "&&" left right
     return left
 
-  parse_equality -> Expression:
-    left := parse_comparison
+  parse-equality -> Expression:
+    left := parse-comparison
     while current.type == Token.OPERATOR and
         (current.value == "==" or
           current.value == "!="):
       op := current.value
       consume Token.OPERATOR
-      right := parse_comparison
+      right := parse-comparison
       left = Binary op left right
     return left
 
-  parse_comparison -> Expression:
-    left := parse_bitwise_or
+  parse-comparison -> Expression:
+    left := parse-bitwise-or
     while current.type == Token.OPERATOR and
         (current.value == "<" or
           current.value == ">" or
@@ -609,83 +609,83 @@ class Parser:
           current.value == ">="):
       op := current.value
       consume Token.OPERATOR
-      right := parse_bitwise_or
+      right := parse-bitwise-or
       left = Binary op left right
     return left
 
-  parse_bitwise_or -> Expression:
-    left := parse_bitwise_xor
+  parse-bitwise-or -> Expression:
+    left := parse-bitwise-xor
     while current.type == Token.OPERATOR and
         current.value == "|":
       consume Token.OPERATOR
-      right := parse_bitwise_xor
+      right := parse-bitwise-xor
       left = Binary "|" left right
     return left
 
-  parse_bitwise_xor -> Expression:
-    left := parse_bitwise_and
+  parse-bitwise-xor -> Expression:
+    left := parse-bitwise-and
     while current.type == Token.OPERATOR and
         current.value == "^":
       consume Token.OPERATOR
-      right := parse_bitwise_and
+      right := parse-bitwise-and
       left = Binary "^" left right
     return left
 
-  parse_bitwise_and -> Expression:
-    left := parse_shift
+  parse-bitwise-and -> Expression:
+    left := parse-shift
     while current.type == Token.OPERATOR and
         current.value == "&":
       consume Token.OPERATOR
-      right := parse_shift
+      right := parse-shift
       left = Binary "&" left right
     return left
 
-  parse_shift -> Expression:
-    left := parse_additive
+  parse-shift -> Expression:
+    left := parse-additive
     while current.type == Token.OPERATOR and
         (current.value == "<<" or
           current.value == ">>" or
           current.value == ">>>"):
       op := current.value
       consume Token.OPERATOR
-      right := parse_additive
+      right := parse-additive
       left = Binary op left right
     return left
 
-  parse_additive -> Expression:
-    left := parse_multiplicative
+  parse-additive -> Expression:
+    left := parse-multiplicative
     while current.type == Token.OPERATOR and
         (current.value == "+" or
           current.value == "-"):
       op := current.value
       consume Token.OPERATOR
-      right := parse_multiplicative
+      right := parse-multiplicative
       left = Binary op left right
     return left
 
-  parse_multiplicative -> Expression:
-    left := parse_unary
+  parse-multiplicative -> Expression:
+    left := parse-unary
     while current.type == Token.OPERATOR and
         (current.value == "*" or
           current.value == "/" or
           current.value == "%"):
       op := current.value
       consume Token.OPERATOR
-      right := parse_unary
+      right := parse-unary
       left = Binary op left right
     return left
 
-  parse_unary -> Expression:
+  parse-unary -> Expression:
     if current.type == Token.OPERATOR and
         (current.value == "-" or
           current.value == "~" or
           current.value == "!"):
       op := current.value
       consume Token.OPERATOR
-      return Unary op parse_unary
-    return parse_primary
+      return Unary op parse-unary
+    return parse-primary
 
-  parse_primary -> Expression:
+  parse-primary -> Expression:
     if current.type == Token.NUMBER:
       value := current.value
       consume Token.NUMBER
@@ -693,13 +693,13 @@ class Parser:
     if current.type == Token.IDENTIFIER:
       name := current.value
       consume Token.IDENTIFIER
-      if current.type == Token.LEFT_PAREN:
-        consume Token.LEFT_PAREN
+      if current.type == Token.LEFT-PAREN:
+        consume Token.LEFT-PAREN
         args := []
-        while current.type != Token.RIGHT_PAREN:
-          args.add parse_expression
+        while current.type != Token.RIGHT-PAREN:
+          args.add parse-expression
           if current.type == Token.COMMA: consume
-        consume Token.RIGHT_PAREN
+        consume Token.RIGHT-PAREN
         function/Function? := functions.get name
         if not function:
           throw "undefined function: $(name)"
@@ -708,10 +708,10 @@ class Parser:
               expected $(function.arity_), got $(args.size)"""
         return Call function args
       return Reference name
-    if current.type == Token.LEFT_PAREN:
-      consume Token.LEFT_PAREN
-      expression := parse_expression
-      consume Token.RIGHT_PAREN
+    if current.type == Token.LEFT-PAREN:
+      consume Token.LEFT-PAREN
+      expression := parse-expression
+      consume Token.RIGHT-PAREN
       return expression
     if current.type == Token.TRUE:
       consume Token.TRUE
@@ -726,9 +726,9 @@ class Parser:
     throw "unexpected token: $(current.value)"
 
 
-current_dot_id_counter_ := 0
-generate_dot_id_:
-  return "node_$(current_dot_id_counter_++)"
+current-dot-id-counter_ := 0
+generate-dot-id_:
+  return "node_$(current-dot-id-counter_++)"
 
 class Program:
   body/List
@@ -739,27 +739,27 @@ class Program:
     scope := [{:}]
     body.do: it.eval scope (: throw "not in loop") (: throw "not in loop")
 
-  dot_out:
-    my_id := generate_dot_id_
+  dot-out:
+    my-id := generate-dot-id_
     print "digraph ast {"
     print "  node [shape=box]"
-    print "  $my_id [label=\"Program\"]"
-    body.do: it.dot_out my_id ""
+    print "  $my-id [label=\"Program\"]"
+    body.do: it.dot-out my-id ""
     print "}"
 
 abstract class Statement:
   abstract eval scope/List [brek] [cont] -> any
 
-  abstract dot_out parent/string edge_label/string
+  abstract dot-out parent/string edge-label/string
 
 class Nop extends Statement:
   eval scope/List [brek] [cont] -> any:
     return null
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"Nop\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"Nop\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
 
 class Block extends Statement:
   statements/List
@@ -772,11 +772,11 @@ class Block extends Statement:
     scope.resize (scope.size - 1)
     return null
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"...\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    statements.do: it.dot_out my_id ""
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"...\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    statements.do: it.dot-out my-id ""
 
 class Let extends Statement:
   name/string
@@ -789,11 +789,11 @@ class Let extends Statement:
     scope.last[name] = value
     return null
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$name :=\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    expression.dot_out my_id "value"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$name :=\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    expression.dot-out my-id "value"
 
 class If extends Statement:
   condition/Expression
@@ -809,14 +809,14 @@ class If extends Statement:
       return els.eval scope brek cont
     return null
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"if\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    condition.dot_out my_id "condition"
-    then.dot_out my_id "then"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"if\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    condition.dot-out my-id "condition"
+    then.dot-out my-id "then"
     if els:
-      els.dot_out my_id "else"
+      els.dot-out my-id "else"
 
 class While extends Statement:
   condition/Expression
@@ -830,32 +830,32 @@ class While extends Statement:
         continue)
     return null
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"while\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    condition.dot_out my_id "condition"
-    body.dot_out my_id "body"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"while\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    condition.dot-out my-id "condition"
+    body.dot-out my-id "body"
 
 class Continue extends Statement:
   eval scope/List [brek] [cont]:
     cont.call
     unreachable
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"continue\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"continue\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
 
 class Break extends Statement:
   eval scope/List [brek] [cont]:
     brek.call
     unreachable
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"break\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"break\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
 
 class ExpressionStatement extends Statement:
   expression/Expression
@@ -865,14 +865,14 @@ class ExpressionStatement extends Statement:
   eval scope/List [brek] [cont] -> any:
     return expression.eval scope
 
-  dot_out parent/string edge_label/string:
+  dot-out parent/string edge-label/string:
     // No need to pollute the graph with expression statements.
-    expression.dot_out parent edge_label
+    expression.dot-out parent edge-label
 
 abstract class Expression:
   abstract eval scope/List -> any
 
-  abstract dot_out parent/string edge_label/string
+  abstract dot-out parent/string edge-label/string
 
 class Assignment extends Expression:
   left/Reference
@@ -889,12 +889,12 @@ class Assignment extends Expression:
         return value
     throw "undefined variable: $(name)"
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"=\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    left.dot_out my_id "left"
-    right.dot_out my_id "right"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"=\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    left.dot-out my-id "left"
+    right.dot-out my-id "right"
 
 class Unary extends Expression:
   op/string
@@ -912,11 +912,11 @@ class Unary extends Expression:
       return not value
     throw "unexpected operator: $op"
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$op\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    expression.dot_out my_id "value"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$op\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    expression.dot-out my-id "value"
 
 class Binary extends Expression:
   op/string
@@ -927,79 +927,79 @@ class Binary extends Expression:
 
   eval scope/List -> any:
     // Short-circuiting.
-    left_value := left.eval scope
-    if op == "&&" and not left_value:
+    left-value := left.eval scope
+    if op == "&&" and not left-value:
       return false
-    if op == "||" and left_value:
+    if op == "||" and left-value:
       return true
 
-    right_value := right.eval scope
+    right-value := right.eval scope
     if op == "+":
-      if left_value is string or right_value is string:
-        return "$left_value$right_value"
-      return left_value + right_value
+      if left-value is string or right-value is string:
+        return "$left-value$right-value"
+      return left-value + right-value
     if op == "-":
-      return left_value - right_value
+      return left-value - right-value
     if op == "*":
-      return left_value * right_value
+      return left-value * right-value
     if op == "/":
-      return left_value * 1.0 / right_value
+      return left-value * 1.0 / right-value
     if op == "%":
-      return left_value % right_value
+      return left-value % right-value
     if op == "&":
-      return left_value & right_value
+      return left-value & right-value
     if op == "|":
-      return left_value | right_value
+      return left-value | right-value
     if op == "^":
-      return left_value ^ right_value
+      return left-value ^ right-value
     if op == "&&":
-      return left_value and right_value
+      return left-value and right-value
     if op == "||":
-      return left_value or right_value
+      return left-value or right-value
     if op == "==":
-      return left_value == right_value
+      return left-value == right-value
     if op == "!=":
-      return left_value != right_value
+      return left-value != right-value
     if op == "<":
-      return left_value < right_value
+      return left-value < right-value
     if op == "<=":
-      return left_value <= right_value
+      return left-value <= right-value
     if op == ">":
-      return left_value > right_value
+      return left-value > right-value
     if op == ">=":
-      return left_value >= right_value
+      return left-value >= right-value
     if op == "<<":
-      return left_value << right_value
+      return left-value << right-value
     if op == ">>":
-      return left_value >> right_value
+      return left-value >> right-value
     if op == ">>>":
-      return left_value >>> right_value
+      return left-value >>> right-value
     throw "unexpected operator: $(op)"
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$op\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
-    left.dot_out my_id "left"
-    right.dot_out my_id "right"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$op\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
+    left.dot-out my-id "left"
+    right.dot-out my-id "right"
 
 class Number extends Expression:
   value/num
 
-  constructor string_value/string:
-    value = num_parse string_value
+  constructor string-value/string:
+    value = num-parse string-value
 
   eval scope/List -> any:
     return value
 
-  static num_parse string_value/string -> num:
-    return int.parse string_value --if_error=:
-      return float.parse string_value
+  static num-parse string-value/string -> num:
+    return int.parse string-value --if-error=:
+      return float.parse string-value
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$value\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$value\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
 
 class Reference extends Expression:
   name/string
@@ -1012,10 +1012,10 @@ class Reference extends Expression:
         return scope[i][name]
     throw "undefined variable: $(name)"
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$name\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$name\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
 
 class Call extends Expression:
   function/Function
@@ -1024,29 +1024,29 @@ class Call extends Expression:
   constructor .function .args:
 
   eval scope/List -> any:
-    evaluated_args := args.map: it.eval scope
-    return function.action.call evaluated_args
+    evaluated-args := args.map: it.eval scope
+    return function.action.call evaluated-args
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$function.name()\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$function.name()\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
     for i := 0; i < args.size; i += 1:
-      args[i].dot_out my_id "arg $i"
+      args[i].dot-out my-id "arg $i"
 
 class Boolean extends Expression:
   value/bool
 
-  constructor string_value/string:
-    value = string_value == "true"
+  constructor string-value/string:
+    value = string-value == "true"
 
   eval scope/List -> any:
     return value
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"$value\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"$value\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"
 
 class String extends Expression:
   value/string
@@ -1056,7 +1056,7 @@ class String extends Expression:
   eval scope/List -> any:
     return value[1 .. value.size - 1]
 
-  dot_out parent/string edge_label/string:
-    my_id := generate_dot_id_
-    print "  $my_id [label=\"'$value'\"]"
-    print "  $parent -> $my_id [label=\"$edge_label\"]"
+  dot-out parent/string edge-label/string:
+    my-id := generate-dot-id_
+    print "  $my-id [label=\"'$value'\"]"
+    print "  $parent -> $my-id [label=\"$edge-label\"]"

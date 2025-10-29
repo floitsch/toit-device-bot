@@ -2,24 +2,24 @@
 // Use of this source code is governed by a Zero-Clause BSD license that can
 // be found in the EXAMPLES_LICENSE file.
 
-import device_bot show *
-import device_bot.interpreter show *
+import device-bot show *
+import device-bot.interpreter show *
 import expect show *
 
 main:
-  test_primary
-  test_unary
-  test_binary
-  test_precedence
-  test_short_circuit
-  test_statements
-  test_builtins
-  test_openai_programs
-  test_instruction_example
+  test-primary
+  test-unary
+  test-binary
+  test-precedence
+  test-short-circuit
+  test-statements
+  test-builtins
+  test-openai-programs
+  test-instruction-example
 
-run_expression program/Program --allow_multiple_statements/bool=false:
-  if not allow_multiple_statements:
-    expect_equals 1 program.body.size
+run-expression program/Program --allow-multiple-statements/bool=false:
+  if not allow-multiple-statements:
+    expect-equals 1 program.body.size
   scope := [{:}]
   for i := 0 ; i < program.body.size - 1; i++:
     (program.body[i] as Statement).eval scope (: throw "break") (: throw "continue")
@@ -27,216 +27,216 @@ run_expression program/Program --allow_multiple_statements/bool=false:
   expect statement is ExpressionStatement
   return (statement as ExpressionStatement).expression.eval scope
 
-test_primary:
+test-primary:
   node := parse "1;" []
-  expect_equals 1 (run_expression node)
+  expect-equals 1 (run-expression node)
 
   node = parse "1.0;" []
-  expect_equals 1.0 (run_expression node)
+  expect-equals 1.0 (run-expression node)
 
   node = parse "true;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "false;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "\"foo\";" []
-  expect_equals "foo" (run_expression node)
+  expect-equals "foo" (run-expression node)
 
   node = parse "(1);" []
-  expect_equals 1 (run_expression node)
+  expect-equals 1 (run-expression node)
 
   node = parse "let x = 1; x;" []
-  expect_equals
+  expect-equals
       1
-      run_expression node --allow_multiple_statements
+      run-expression node --allow-multiple-statements
 
   node = parse "list_create();" []
-  expect_equals [] (run_expression node)
+  expect-equals [] (run-expression node)
 
-test_unary:
+test-unary:
   node := parse "-1;" []
-  expect_equals -1 (run_expression node)
+  expect-equals -1 (run-expression node)
 
   node = parse "-1.0;" []
-  expect_equals -1.0 (run_expression node)
+  expect-equals -1.0 (run-expression node)
 
   node = parse "~1;" []
-  expect_equals -2 (run_expression node)
+  expect-equals -2 (run-expression node)
 
   node = parse "!true;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "!false;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
 
-test_binary:
+test-binary:
   // Additive:
   node := parse "1 + 2;" []
-  expect_equals 3 (run_expression node)
+  expect-equals 3 (run-expression node)
 
   node = parse "1 - 2;" []
-  expect_equals -1 (run_expression node)
+  expect-equals -1 (run-expression node)
 
   // Multiplicative:
   node = parse "2 * 3;" []
-  expect_equals 6 (run_expression node)
+  expect-equals 6 (run-expression node)
 
   node = parse "8 / 2;" []
-  expect_equals 4 (run_expression node)
+  expect-equals 4 (run-expression node)
 
   node = parse "8 % 3;" []
-  expect_equals 2 (run_expression node)
+  expect-equals 2 (run-expression node)
 
   // Bitwise:
   node = parse "7 & 2;" []
-  expect_equals 2 (run_expression node)
+  expect-equals 2 (run-expression node)
 
   node = parse "10 | 9;" []
-  expect_equals 11 (run_expression node)
+  expect-equals 11 (run-expression node)
 
   node = parse "10 ^ 9;" []
-  expect_equals 3 (run_expression node)
+  expect-equals 3 (run-expression node)
 
   node = parse "~10;" []
-  expect_equals -11 (run_expression node)
+  expect-equals -11 (run-expression node)
 
   node = parse "3 << 2;" []
-  expect_equals 12 (run_expression node)
+  expect-equals 12 (run-expression node)
 
   node = parse "12 >> 2;" []
-  expect_equals 3 (run_expression node)
+  expect-equals 3 (run-expression node)
 
   node = parse "-1 >>> 60;" []
-  expect_equals 15 (run_expression node)
+  expect-equals 15 (run-expression node)
 
   // Relational:
   node = parse "1 < 2;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "2 < 1;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 < 1;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 <= 2;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "2 <= 1;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 <= 1;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 > 2;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "2 > 1;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 > 1;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 >= 2;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "2 >= 1;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   // Equality:
   node = parse "1 == 2;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "2 == 1;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 == 1;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 != 2;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "2 != 1;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 != 1;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   // Logical:
   node = parse "true && true;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "true && false;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "false && false;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "false && true;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "true || true;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "true || false;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "false || false;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "false || true;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   // Floating point operations:
   node = parse "1.5 + 2.0;" []
-  expect_equals 3.5 (run_expression node)
+  expect-equals 3.5 (run-expression node)
 
   node = parse "1.0 - 2.5;" []
-  expect_equals -1.5 (run_expression node)
+  expect-equals -1.5 (run-expression node)
 
   node = parse "2.5 * 3.0;" []
-  expect_equals 7.5 (run_expression node)
+  expect-equals 7.5 (run-expression node)
 
   node = parse "8.5 / 2.0;" []
-  expect_equals 4.25 (run_expression node)
+  expect-equals 4.25 (run-expression node)
 
   node = parse "8.5 % 3.0;" []
-  expect_equals 2.5 (run_expression node)
+  expect-equals 2.5 (run-expression node)
 
   node = parse "1.5 < 2.0;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "2.5 < 1.0;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   // Floating point wins over integer:
   node = parse "1 + 2.0;" []
-  expect_equals 3.0 (run_expression node)
+  expect-equals 3.0 (run-expression node)
 
   node = parse "1.0 + 2;" []
-  expect_equals 3.0 (run_expression node)
+  expect-equals 3.0 (run-expression node)
 
   node = parse "1.0 < 2;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   // String concatenation:
   node = parse "\"a\" + \"b\";" []
-  expect_equals "ab" (run_expression node)
+  expect-equals "ab" (run-expression node)
 
   node = parse "\"a\" + 1;" []
-  expect_equals "a1" (run_expression node)
+  expect-equals "a1" (run-expression node)
 
   node = parse "1 + \"b\";" []
-  expect_equals "1b" (run_expression node)
+  expect-equals "1b" (run-expression node)
 
   // Assignment.
   node = parse "let a = 2; a = 1;" []
-  expect_equals 1
-      run_expression node --allow_multiple_statements
+  expect-equals 1
+      run-expression node --allow-multiple-statements
 
-test_precedence:
+test-precedence:
   // Expected order:
   // 1. Unary
   // 2. Multiplicative
@@ -253,92 +253,92 @@ test_precedence:
 
   node := parse "-1 * 2;" []
   // Not like we can detect a difference...
-  expect_equals -2 (run_expression node)
+  expect-equals -2 (run-expression node)
 
   node = parse "1 * -2;" []
   // Not like we can detect a difference...
-  expect_equals -2 (run_expression node)
+  expect-equals -2 (run-expression node)
 
   node = parse "~1 * 2;" []
-  expect_equals -4 (run_expression node)
+  expect-equals -4 (run-expression node)
 
   node = parse "3 * ~2;" []
-  expect_equals -9 (run_expression node)
+  expect-equals -9 (run-expression node)
 
   node = parse "1 * 2 + 3;" []
-  expect_equals 5 (run_expression node)
+  expect-equals 5 (run-expression node)
 
   node = parse "1 + 2 * 3;" []
-  expect_equals 7 (run_expression node)
+  expect-equals 7 (run-expression node)
 
   node = parse "1 << 2 + 3;" []
-  expect_equals 32 (run_expression node)
+  expect-equals 32 (run-expression node)
 
   node = parse "1 + 2 << 3;" []
-  expect_equals 24 (run_expression node)
+  expect-equals 24 (run-expression node)
 
   node = parse "1 & 2 + 3;" []
-  expect_equals 1 (run_expression node)
+  expect-equals 1 (run-expression node)
 
   node = parse "1 + 2 & 3;" []
-  expect_equals 3 (run_expression node)
+  expect-equals 3 (run-expression node)
 
   node = parse "1 ^ 2 + 3;" []
-  expect_equals 4 (run_expression node)
+  expect-equals 4 (run-expression node)
 
   node = parse "1 & 3 ^ 3;" []
-  expect_equals 2 (run_expression node)
+  expect-equals 2 (run-expression node)
 
   node = parse "1 ^ 3 & 3;" []
-  expect_equals 2 (run_expression node)
+  expect-equals 2 (run-expression node)
 
   node = parse "1 | 2 ^ 3;" []
-  expect_equals 1 (run_expression node)
+  expect-equals 1 (run-expression node)
 
   node = parse "1 ^ 3 | 1;" []
-  expect_equals 3 (run_expression node)
+  expect-equals 3 (run-expression node)
 
   node = parse "1 < 2 | 3;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 | 3 < 2;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 == 2 | 3;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 | 3 == 2;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 == 1 && 2 == 3;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "1 == 1 && 2 == 2;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 == 1 || 2 == 3;" []
-  expect_equals true (run_expression node)
+  expect-equals true (run-expression node)
 
   node = parse "1 == 2 || 2 == 3;" []
-  expect_equals false (run_expression node)
+  expect-equals false (run-expression node)
 
   node = parse "let a = 1; a = true && 1 == 2;" []
-  expect_equals false
-      run_expression node --allow_multiple_statements
+  expect-equals false
+      run-expression node --allow-multiple-statements
 
   node = parse "let a = 1; a = true && 1 == 1;" []
-  expect_equals true
-      run_expression node --allow_multiple_statements
+  expect-equals true
+      run-expression node --allow-multiple-statements
 
   node = parse "let a = 1; a = true || 1 == 2;" []
-  expect_equals true
-      run_expression node --allow_multiple_statements
+  expect-equals true
+      run-expression node --allow-multiple-statements
 
   node = parse "let a = 1; a = false || 1 == 2;" []
-  expect_equals false
-      run_expression node --allow_multiple_statements
+  expect-equals false
+      run-expression node --allow-multiple-statements
 
-run_with_log code/string -> List:
+run-with-log code/string -> List:
   log := []
   functions := [
     Function
@@ -366,84 +366,84 @@ run_with_log code/string -> List:
   program.eval
   return log
 
-test_short_circuit:
+test-short-circuit:
   // Short-circuiting AND.
-  log := run_with_log "true && identity(true);"
-  expect_equals ["identity true"] log
+  log := run-with-log "true && identity(true);"
+  expect-equals ["identity true"] log
 
-  log = run_with_log "false && identity(true);"
-  expect_equals [] log
+  log = run-with-log "false && identity(true);"
+  expect-equals [] log
 
   // Short-circuiting OR.
-  log = run_with_log "true || identity(true);"
-  expect_equals [] log
+  log = run-with-log "true || identity(true);"
+  expect-equals [] log
 
-  log = run_with_log "false || identity(true);"
-  expect_equals ["identity true"] log
+  log = run-with-log "false || identity(true);"
+  expect-equals ["identity true"] log
 
-test_statements:
+test-statements:
   // Statements are evaluated in order.
-  log := run_with_log """
+  log := run-with-log """
     print("Hello");
     print("World");
   """
-  expect_equals [
+  expect-equals [
     "print Hello",
     "print World",
   ] log
 
   // Let statements.
-  log = run_with_log """
+  log = run-with-log """
     let a = 1;
     print(a);
   """
-  expect_equals [
+  expect-equals [
     "print 1",
   ] log
 
   // Let statements with expressions.
-  log = run_with_log """
+  log = run-with-log """
     let a = 1 + 2;
     print(a);
   """
-  expect_equals [
+  expect-equals [
     "print 3",
   ] log
 
   // While loops.
-  log = run_with_log """
+  log = run-with-log """
     let i = 0;
     while (i < 3) {
       print(i);
       i = i + 1;
     }
   """
-  expect_equals [
+  expect-equals [
     "print 0",
     "print 1",
     "print 2",
   ] log
 
   // Empty while.
-  log = run_with_log """
+  log = run-with-log """
     while (false) {
       print("This should never print");
     }
   """
-  expect_equals [] log
+  expect-equals [] log
 
   // While with statement not block.
-  log = run_with_log """
+  log = run-with-log """
     let list = list_create();
     while (list_size(list) < 3) list_add(list, 1);
     print(list_size(list));
   """
-  expect_equals [
+  expect-equals [
     "print 3",
   ] log
 
   // Continue.
-  log = run_with_log """
+  log = run-with-log """
     let i = 0;
     while (i < 3) {
       if (i == 1) {
@@ -454,13 +454,13 @@ test_statements:
       i = i + 1;
     }
   """
-  expect_equals [
+  expect-equals [
     "print 0",
     "print 2",
   ] log
 
   // Nested continue.
-  log = run_with_log """
+  log = run-with-log """
     let i = 0;
     while (i < 3) {
       if (i == 1) {
@@ -480,7 +480,7 @@ test_statements:
       i = i + 1;
     }
   """
-  expect_equals [
+  expect-equals [
     "print i0",
     "print j0",
     "print j2",
@@ -490,7 +490,7 @@ test_statements:
   ] log
 
   // Break.
-  log = run_with_log """
+  log = run-with-log """
     let i = 0;
     while (i < 3) {
       if (i == 1) {
@@ -501,13 +501,13 @@ test_statements:
     }
     print(i);
   """
-  expect_equals [
+  expect-equals [
     "print 0",
     "print 1",
   ] log
 
   // Nested break.
-  log = run_with_log """
+  log = run-with-log """
     let i = 0;
     while (i < 3) {
       if (i == 2) {
@@ -525,7 +525,7 @@ test_statements:
       }
     }
   """
-  expect_equals [
+  expect-equals [
     "print i0",
     "print j0",
     "print i1",
@@ -534,79 +534,79 @@ test_statements:
   ] log
 
   // If statements.
-  log = run_with_log """
+  log = run-with-log """
     if (true) {
       print("This should print");
     }
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
-  log = run_with_log """
+  log = run-with-log """
     if (false) {
       print("This should never print");
     }
   """
-  expect_equals [] log
+  expect-equals [] log
 
   // If with statement not block.
-  log = run_with_log """
+  log = run-with-log """
     if (true) print("This should print");
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
   // If-else statements.
-  log = run_with_log """
+  log = run-with-log """
     if (true) {
       print("This should print");
     } else {
       print("This should never print");
     }
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
-  log = run_with_log """
+  log = run-with-log """
     if (false) {
       print("This should never print");
     } else {
       print("This should print");
     }
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
   // If-else with statement not block.
-  log = run_with_log """
+  log = run-with-log """
     if (true) print("This should print");
     else print("This should never print");
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
-  log = run_with_log """
+  log = run-with-log """
     if (false) print("This should never print");
     else print("This should print");
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
   // Test nops.
-  log = run_with_log ";"
-  expect_equals [] log
+  log = run-with-log ";"
+  expect-equals [] log
 
-  log = run_with_log """
+  log = run-with-log """
     if (true);
   """
-  expect_equals [] log
+  expect-equals [] log
 
-  log = run_with_log """
+  log = run-with-log """
     if (false); else print("This should print");
   """
-  expect_equals ["print This should print"] log
+  expect-equals ["print This should print"] log
 
-  log = run_with_log """
+  log = run-with-log """
     if (true) {
     }
   """
-  expect_equals [] log
+  expect-equals [] log
 
-test_builtins:
+test-builtins:
   // No real way to test 'print'.
 
   // Sleep.
@@ -616,13 +616,13 @@ test_builtins:
   duration := Duration.of:
     10.repeat:
       program.eval
-  sleep_duration := duration * 2
-  in_ms := sleep_duration.in_ms
-  if in_ms == 0: in_ms = 1
-  program = parse "sleep($in_ms);" []
+  sleep-duration := duration * 2
+  in-ms := sleep-duration.in-ms
+  if in-ms == 0: in-ms = 1
+  program = parse "sleep($in-ms);" []
   measured := Duration.of:
     program.eval
-  expect measured > sleep_duration
+  expect measured > sleep-duration
 
   // List functions.
   // - list_create
@@ -648,8 +648,8 @@ test_builtins:
     list2;
   """ []
 
-  result := run_expression program --allow_multiple_statements
-  expect_equals [3, 2, 1, 1, 4, 3] result
+  result := run-expression program --allow-multiple-statements
+  expect-equals [3, 2, 1, 1, 4, 3] result
 
 /**
 Test OpenAI programs.
@@ -657,7 +657,7 @@ Test OpenAI programs.
 These aren't really pinnacles of programming, but that's what our
   interpreter has to deal with.
 */
-test_openai_programs:
+test-openai-programs:
   PROGRAM ::= """
     let reminder = true;
     if (reminder) {
@@ -683,9 +683,9 @@ test_openai_programs:
     "sleep --ms=17000",
     "print You can do anything you put your mind to!",
   ]
-  expect_equals
+  expect-equals
       expected
-      run_with_log PROGRAM
+      run-with-log PROGRAM
 
   PROGRAM2 ::= """
     let remind = true;
@@ -712,9 +712,9 @@ test_openai_programs:
     "sleep --ms=20000",
     "print Way to go, champ!",
   ]
-  expect_equals
+  expect-equals
       expected
-      run_with_log PROGRAM2
+      run-with-log PROGRAM2
 
   PROGRAM3 ::= """
     let message = "Don't forget about your noodles! Keep up the good work!";
@@ -729,11 +729,11 @@ test_openai_programs:
     "sleep --ms=20000",
     "print You're doing great!",
   ]
-  expect_equals
+  expect-equals
       expected
-      run_with_log PROGRAM3
+      run-with-log PROGRAM3
 
-test_instruction_example:
+test-instruction-example:
   // Make sure the example we send to OpenAI is actually correct...
   EXAMPLE ::= """
     // Create a map from numbers to their squares.
@@ -762,6 +762,6 @@ test_instruction_example:
     "print 5",
     "print 28.5",
   ]
-  expect_equals
+  expect-equals
       expected
-      run_with_log EXAMPLE
+      run-with-log EXAMPLE

@@ -7,12 +7,12 @@ import openai
 import .interpreter
 export Function
 
-SYSTEM_MESSAGE ::=
+SYSTEM-MESSAGE ::=
     "You are terse bot that writes simple programs in a simplified C-like programming language."
 
 // We hardcode the builtins here, so that the string can be stored in flash.
 // We also shorten the description, a bit.
-LANGUAGE_DESCRIPTION ::= """
+LANGUAGE-DESCRIPTION ::= """
   Given a simplified C-like programming language with the following builtin functions:
   - print(<message>).
   - sleep(<ms>).
@@ -49,61 +49,61 @@ LANGUAGE_DESCRIPTION ::= """
 
   This language is *not* Javascript. It has no objects (not even 'Math') or self-defined functions. No 'const'."""
 
-REQUEST_MESSAGE ::= """
+REQUEST-MESSAGE ::= """
   Write a program that implements the functionality below (after '===').
   Only respond with the program. Don't add any instructions or explanations.
   ====
   """
 
 class DeviceBot:
-  openai_client_/openai.Client? := ?
-  function_description_message_/string ::= ?
+  openai-client_/openai.Client? := ?
+  function-description-message_/string ::= ?
   functions_/List
   logger_/log.Logger
 
-  executing_task_/Task? := null
+  executing-task_/Task? := null
 
-  constructor --openai_key/string functions/List --logger/log.Logger=log.default:
-    logger_ = logger.with_name "DeviceBot"
+  constructor --openai-key/string functions/List --logger/log.Logger=log.default:
+    logger_ = logger.with-name "DeviceBot"
     functions_ = functions
     builtins := {}
     BUILTINS.do: | builtin/Function |
       builtins.add builtin.name
-    has_user_function := false
-    function_description_message_ = ""
+    has-user-function := false
+    function-description-message_ = ""
     functions.do: | function/Function |
       if not builtins.contains function.name:
-        if not has_user_function:
-          function_description_message_ += "The language furthermore has the following functions:\n"
-          has_user_function = true
-        function_description_message_ += "- '$function.syntax': $function.description\n"
-    if has_user_function:
-      function_description_message_ += "Under no circumstances use any function that is not on the builtin list or this list!"
+        if not has-user-function:
+          function-description-message_ += "The language furthermore has the following functions:\n"
+          has-user-function = true
+        function-description-message_ += "- '$function.syntax': $function.description\n"
+    if has-user-function:
+      function-description-message_ += "Under no circumstances use any function that is not on the builtin list or this list!"
     else:
-      function_description_message_ += "Under no circumstances use any function that is not on the builtin list!"
+      function-description-message_ += "Under no circumstances use any function that is not on the builtin list!"
 
-    openai_client_ = openai.Client --key=openai_key
+    openai-client_ = openai.Client --key=openai-key
 
   close:
-    if openai_client_:
-      openai_client_.close
-      openai_client_ = null
-    if executing_task_:
-      executing_task_.cancel
-      executing_task_ = null
+    if openai-client_:
+      openai-client_.close
+      openai-client_ = null
+    if executing-task_:
+      executing-task_.cancel
+      executing-task_ = null
 
-  handle_message message/string? --when_started/Lambda --on_error/Lambda?=null:
-    if executing_task_:
-      executing_task_.cancel
-      executing_task_ = null
-    request_message := "$REQUEST_MESSAGE$message"
+  handle-message message/string? --when-started/Lambda --on-error/Lambda?=null:
+    if executing-task_:
+      executing-task_.cancel
+      executing-task_ = null
+    request-message := "$REQUEST-MESSAGE$message"
     message = null  // Allow to GC.
-    executing_task_ = task::
+    executing-task_ = task::
       conversation/List? := [
-        openai.ChatMessage.system SYSTEM_MESSAGE,
-        openai.ChatMessage.user LANGUAGE_DESCRIPTION,
-        openai.ChatMessage.user function_description_message_,
-        openai.ChatMessage.user request_message,
+        openai.ChatMessage.system SYSTEM-MESSAGE,
+        openai.ChatMessage.user LANGUAGE-DESCRIPTION,
+        openai.ChatMessage.user function-description-message_,
+        openai.ChatMessage.user request-message,
       ]
 
       // Give OpenAI 3 attempts to get something parseable.
@@ -112,22 +112,22 @@ class DeviceBot:
         logger_.debug "requesting completion from OpenAI" --tags={
           "conversation": conversation,
         }
-        response/string? := openai_client_.complete_chat --conversation=conversation --max_tokens=500
+        response/string? := openai-client_.complete-chat --conversation=conversation --max-tokens=500
         logger_.debug "got response" --tags={ "data": response }
-        if response.ends_with "```" or response.ends_with "```\n":
+        if response.ends-with "```" or response.ends-with "```\n":
           // Grrr. Bot added a code block. Potentially even adding some noise.
-          start_pos := response.index_of "```"
-          end_pos := response.index_of --last "```"
-          response = response[start_pos + 3 .. end_pos]
+          start-pos := response.index-of "```"
+          end-pos := response.index-of --last "```"
+          response = response[start-pos + 3 .. end-pos]
         exception := catch --trace:
           program := parse response functions_
           response = null
           conversation = null
-          when_started.call
+          when-started.call
           program.eval
           succeeded = true
         if exception and not conversation:
           logger_.info "running the program failed" --tags={ "error": exception }
         if not exception or not conversation: break
 
-      if not succeeded and on_error: on_error.call
+      if not succeeded and on-error: on-error.call
