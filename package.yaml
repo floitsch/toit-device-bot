@@ -1,5 +1,8 @@
 name: device_bot
 description: A bot running on embedded devices, using OpenAI to interpret commands.
+environment:
+  sdk: ^2.0.0-alpha.189
+
 dependencies:
   host:
     url: github.com/toitlang/pkg-host

@@ -993,7 +993,7 @@ class Number extends Expression:
     return value
 
   static num_parse string_value/string -> num:
-    return int.parse string_value --on_error=:
+    return int.parse string_value --if_error=:
       return float.parse string_value
 
   dot_out parent/string edge_label/string:
